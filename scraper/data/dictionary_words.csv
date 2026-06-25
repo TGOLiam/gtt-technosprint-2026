@@ -1,0 +1,119 @@
+id,text,dialect_variant,category,source
+w0000,kamot (hand),rinconada,lexicon,abvd
+w0001,wala (left),rinconada,lexicon,abvd
+w0002,too (right),rinconada,lexicon,abvd
+w0003,"paa (leg, foot)",rinconada,lexicon,abvd
+w0004,"tiil (leg, foot)",rinconada,lexicon,abvd
+w0005,"raran (road, path)",rinconada,lexicon,abvd
+w0006,magabot (to come),rinconada,lexicon,abvd
+w0007,maglangoy (to swim),rinconada,lexicon,abvd
+w0008,maati' (dirty),rinconada,lexicon,abvd
+w0009,kulit (skin),rinconada,lexicon,abvd
+w0010,buros (belly),rinconada,lexicon,abvd
+w0011,tulang (bone),rinconada,lexicon,abvd
+w0012,bituka (intestines),rinconada,lexicon,abvd
+w0013,atay (liver),rinconada,lexicon,abvd
+w0014,abaga (shoulder),rinconada,lexicon,abvd
+w0015,"isi (to know, to be knowledgeable)",rinconada,lexicon,abvd
+w0016,takot (to fear),rinconada,lexicon,abvd
+w0017,rugo' (blood),rinconada,lexicon,abvd
+w0018,payo (head),rinconada,lexicon,abvd
+w0019,liog (neck),rinconada,lexicon,abvd
+w0020,buwok (hair),rinconada,lexicon,abvd
+w0021,orong (nose),rinconada,lexicon,abvd
+w0022,nganga (mouth),rinconada,lexicon,abvd
+w0023,ngipon (tooth),rinconada,lexicon,abvd
+w0024,rira' (tongue),rinconada,lexicon,abvd
+w0025,magtawa (to laugh),rinconada,lexicon,abvd
+w0026,magtangis (to cry),rinconada,lexicon,abvd
+w0027,magsuka (to vomit),rinconada,lexicon,abvd
+w0028,magkaon (to eat),rinconada,lexicon,abvd
+w0029,maglutô (to cook),rinconada,lexicon,abvd
+w0030,maginom (to drink),rinconada,lexicon,abvd
+w0031,kagat (to bite),rinconada,lexicon,abvd
+w0032,talinga (ear),rinconada,lexicon,abvd
+w0033,marongog (to hear),rinconada,lexicon,abvd
+w0034,mata (eye),rinconada,lexicon,abvd
+w0035,magturog (to sleep),rinconada,lexicon,abvd
+w0036,"tawo (person, human being)",rinconada,lexicon,abvd
+w0037,"lalaki (man, male)",rinconada,lexicon,abvd
+w0038,"babaye (woman, female)",rinconada,lexicon,abvd
+w0039,igin (child),rinconada,lexicon,abvd
+w0040,"agom (husband, wife)",rinconada,lexicon,abvd
+w0041,baloy (house),rinconada,lexicon,abvd
+w0042,ngaran (name),rinconada,lexicon,abvd
+w0043,magsabi (to say),rinconada,lexicon,abvd
+w0044,magbakal (to buy),rinconada,lexicon,abvd
+w0045,ayam (dog),rinconada,lexicon,abvd
+w0046,itlog (egg),rinconada,lexicon,abvd
+w0047,isura' (fish),rinconada,lexicon,abvd
+w0048,burak (flower),rinconada,lexicon,abvd
+w0049,bunga (fruit),rinconada,lexicon,abvd
+w0050,"raga' (earth, soil)",rinconada,lexicon,abvd
+w0051,bato (stone),rinconada,lexicon,abvd
+w0052,tubig (water),rinconada,lexicon,abvd
+w0053,dagat (sea),rinconada,lexicon,abvd
+w0054,asin (salt),rinconada,lexicon,abvd
+w0055,bulan (moon),rinconada,lexicon,abvd
+w0056,bituon (star),rinconada,lexicon,abvd
+w0057,uran (rain),rinconada,lexicon,abvd
+w0058,angin (wind),rinconada,lexicon,abvd
+w0059,"mainit (warm, hot)",rinconada,lexicon,abvd
+w0060,mabasa' (wet),rinconada,lexicon,abvd
+w0061,kalayo (fire),rinconada,lexicon,abvd
+w0062,itom (black),rinconada,lexicon,abvd
+w0063,puti' (white),rinconada,lexicon,abvd
+w0064,pula (red),rinconada,lexicon,abvd
+w0065,sadit (small),rinconada,lexicon,abvd
+w0066,dakulo' (big),rinconada,lexicon,abvd
+w0067,maray (good),rinconada,lexicon,abvd
+w0068,"maraot (bad, evil)",rinconada,lexicon,abvd
+w0069,gab-i (night),rinconada,lexicon,abvd
+w0070,aldow (day),rinconada,lexicon,abvd
+w0071,taon (year),rinconada,lexicon,abvd
+w0072,ini (this),rinconada,lexicon,abvd
+w0073,adto (that),rinconada,lexicon,abvd
+w0074,ako (I),rinconada,lexicon,abvd
+w0075,"ika (thou, you (singular))",rinconada,lexicon,abvd
+w0076,"siya (he, she)",rinconada,lexicon,abvd
+w0077,kita (we (inclusive)),rinconada,lexicon,abvd
+w0078,kamo (you (plural)),rinconada,lexicon,abvd
+w0079,sinda (they),rinconada,lexicon,abvd
+w0080,usad (one),rinconada,lexicon,abvd
+w0081,darwa (two),rinconada,lexicon,abvd
+w0082,tolo (three),rinconada,lexicon,abvd
+w0083,opat (four),rinconada,lexicon,abvd
+w0084,lima (five),rinconada,lexicon,abvd
+w0085,anahaw (the round-leaf fountain palm),naga,lexicon,kaikki
+w0086,"anas (all, everything)",naga,lexicon,kaikki
+w0087,anay (termite),naga,lexicon,kaikki
+w0088,"anayon (sow, female pig)",naga,lexicon,kaikki
+w0089,anga (to depend on),naga,lexicon,kaikki
+w0090,angas (receding hairline),naga,lexicon,kaikki
+w0091,angat (challenge),naga,lexicon,kaikki
+w0092,"angay (fitting, suitable)",naga,lexicon,kaikki
+w0093,"anggot (angry, enraged)",naga,lexicon,kaikki
+w0094,anghel (angel),naga,lexicon,kaikki
+w0095,angkla (anchor),naga,lexicon,kaikki
+w0096,angog (forehead),naga,lexicon,kaikki
+w0097,angot (spinster),naga,lexicon,kaikki
+w0098,ani (harvest),naga,lexicon,kaikki
+w0099,aninipot (firefly),naga,lexicon,kaikki
+w0100,anino (shadow),naga,lexicon,kaikki
+w0101,anira (honeycomb),naga,lexicon,kaikki
+w0102,ano (what),naga,lexicon,kaikki
+w0103,"anod (drift, to bob on the surface of water)",naga,lexicon,kaikki
+w0104,anom (six),naga,lexicon,kaikki
+w0105,anom na pulo (sixty),naga,lexicon,kaikki
+w0106,ansyas (fighting stance),naga,lexicon,kaikki
+w0107,antabay (escorting),naga,lexicon,kaikki
+w0108,apa (ice cream cone),naga,lexicon,kaikki
+w0109,apat (four),naga,lexicon,kaikki
+w0110,apat na pulo (forty),naga,lexicon,kaikki
+w0111,"apelyido (surname, family name, last name)",naga,lexicon,kaikki
+w0112,api (oppressed),naga,lexicon,kaikki
+w0113,"apisiyonado (amateur, apprentice, novice)",naga,lexicon,kaikki
+w0114,apog (lime),naga,lexicon,kaikki
+w0115,"apuon (ancestor, forefather, progenitor)",naga,lexicon,kaikki
+w0116,"apura (to hurry someone, to rush someone)",naga,lexicon,kaikki
+w0117,"apurahon (to hurry someone, to rush someone)",naga,lexicon,kaikki
