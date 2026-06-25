@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "metadata.db"
-PROMPTS_CSV = Path(__file__).resolve().parent.parent.parent / "scraper" / "data" / "prompts.csv"
+PROMPTS_CSV = Path(__file__).resolve().parent.parent / "data" / "prompts.csv"
 
 
 def get_db():
