@@ -61,23 +61,10 @@ output lets you decide whose signal to trust.
 - Python 3.11+
 - ffmpeg
 
-### Run the pipeline
+### 1. Use Your Own Audio
 
-```bash
-# Install dependencies (one time)
-pip install -r pipeline/requirements.txt
-
-# Run with sample config
-./run.sh testing/test_input/ testing/test_output/
-```
-
-First run downloads MMS-LID-256 (~3.9 GB, cached thereafter). GPU is
-auto-detected. On CPU, expect 5–15s per 10s segment.
-
-### Use your own audio
-
-1. Drop audio files into a directory (any format — mp3, mp4, wav, webm, etc.)
-2. Create a `manifest.yml` listing each file with its dialect label:
+Drop audio files into a directory (any format — mp3, mp4, wav, webm, etc.).
+Create a `manifest.yml` listing each file with its dialect label:
 
 ```yaml
 defaults:
@@ -90,26 +77,48 @@ files:
     source_type: field_recording
 ```
 
-3. Run:
+See `testing/test_input/manifest.yml` for a full example with all options.
+
+### 2. Run Locally
 
 ```bash
+# Install dependencies (one time)
+pip install -r pipeline/requirements.txt
+
+# Run the full pipeline
 ./run.sh my_audio/ my_output/
 ```
 
-See `testing/test_input/manifest.yml` for a full example with all options.
+First run downloads MMS-LID-256 (~3.9 GB, cached thereafter). GPU is
+auto-detected. On CPU, expect 5–15s per 10s segment.
 
-### Skip classification (fast local-only run)
+### 3. Run with Google Colab
+
+If your machine lacks a GPU, offload Stage 3 to Colab's free T4:
+
+```bash
+# Run stages 1–2 locally (fast, CPU-friendly)
+./run.sh my_audio/ my_output/ --skip-classify
+
+# Then:
+# 1. Zip the WAVs: zip -r audio.zip my_output/audio/
+# 2. Open pipeline/validate.ipynb in Google Colab
+# 3. Upload audio.zip → Runtime → Run All
+# 4. Download manifest.csv + rejected.csv → place in my_output/
+```
+
+Colab processes ~100× faster than CPU and requires no local ML dependencies.
+
+### 4. Skip Inference
+
+Run only stages 1–2 (normalize + segment) without any language classification:
 
 ```bash
 ./run.sh my_audio/ my_output/ --skip-classify
 ```
 
-Runs stages 1–2 (normalize + segment) without MMS-LID. Use the Colab
-fallback for classification later:
-
-1. Open `pipeline/validate.ipynb` in Google Colab
-2. Upload `my_output/audio/` as a zip
-3. Runtime → Run All → download CSVs
+Useful for quick format conversion and segmentation when you don't need
+language validation.
 
 ---
 
