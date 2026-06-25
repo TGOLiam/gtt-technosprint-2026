@@ -1,0 +1,27 @@
+# ─── Bikol Speech Pipeline Sample ──────────────────────────────────
+# Drop your audio/video files in this directory, list them below,
+# then run:
+#
+#    ./pipeline/run.sh testing/test_input/ testing/test_output/
+#
+# ────────────────────────────────────────────────────────────────────
+
+defaults:
+  confidence: high
+  segment:
+    max_duration_s: 10
+    min_duration_s: 1
+
+files:
+  # Example entries — replace with your actual audio files.
+  # Uncomment and edit:
+  #
+  # - path: my_recording.mp3
+  #   dialect_label: naga
+  #   source_name: bible-central-bikol
+  #   source_type: bible_api
+  #
+  # - path: interview.mp4
+  #   dialect_label: albay
+  #   confidence: inferred
+  #   source_type: field_recording
