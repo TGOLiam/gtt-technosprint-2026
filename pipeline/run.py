@@ -23,6 +23,10 @@ def main():
     input_dir = args.input_dir.resolve()
     output_dir = args.output_dir.resolve()
 
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
+
     if not input_dir.is_dir():
         print(f"Error: input directory not found: {input_dir}")
         sys.exit(1)
