@@ -1,9 +1,15 @@
 # TinigBicol — Bikol Speech Preprocessing Pipeline
 
-A tool that transforms raw Bikol-language audio/video into structured, annotated speech segments — ready for ASR research, dialect study, and dataset construction.
+Despite being spoken by millions across the Bicol Region, Bikol remains 
+almost entirely absent from open speech technology. No public dataset exists. 
+No benchmark. No baseline. Every Filipino voice deserves to be heard — and 
+that starts with building the infrastructure to capture it.
 
-Drop a folder of audio files and a `manifest.yml` — get standardized 16kHz
-WAV segments with language classification and structured metadata back.
+TinigBicol transforms raw Bikol-language audio and video into structured, 
+annotated speech segments — ready for ASR research, dialect study, and 
+dataset construction. Drop a folder of audio files and a `manifest.yml` — 
+get standardized 16kHz WAV segments with language annotation and structured 
+metadata back.
 
 ---
 
