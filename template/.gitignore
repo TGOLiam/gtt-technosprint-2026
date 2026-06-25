@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vite/
+
+__pycache__/
+*.pyc
+*.pyo
+
+.env
+.venv/
+venv/
+.python-version
+
+.DS_Store
+*.swp
+*.swo
