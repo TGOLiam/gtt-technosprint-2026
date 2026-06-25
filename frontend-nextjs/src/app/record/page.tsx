@@ -45,6 +45,7 @@ export default function RecordPage() {
         sentenceId: current.id,
         userId: session.id,
         audioBlob: recorder.audioBlob,
+        dialectLabel: session.region,
       });
       setResult(rec);
     } finally {

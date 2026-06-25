@@ -68,13 +68,27 @@ Tinig Bicol empowers communities to preserve their language by contributing thei
 - Node.js 18+
 - Python 3.11+
 - pip
+- ffmpeg
+
+## Project layout
+
+```
+├── frontend-nextjs/     Next.js 16 + React 19 + Tailwind CSS v4
+├── backend/             FastAPI + SQLite (port 8000)
+├── scraper/             Bikol audio/text data pipeline
+├── Makefile             install, dev, test, build, clean
+└── .env.example         shared env vars
+```
 
 ## Quick start
 
 ```bash
-make install   # install both frontend and backend dependencies
-make dev       # start both dev servers (backend: :8000, frontend: :5173)
+make install
+make dev
 ```
+
+- Backend: http://localhost:8000
+- Frontend: http://localhost:3000
 
 Or start each independently:
 
@@ -84,30 +98,39 @@ cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# Frontend (separate terminal)
-cd frontend
+# Frontend
+cd frontend-nextjs
 npm install
 npm run dev
 ```
 
-Frontend dev server proxies `/api/*` requests to `http://localhost:8000`.
+## API endpoints
 
-## Project layout
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| GET | `/api/prompt?dialect=naga\|albay` | Get next sentence prompt |
+| POST | `/api/record` | Submit audio recording (multipart) |
+| GET | `/api/stats` | Dashboard statistics |
 
-```
-├── frontend/          Vite + React (port 5173)
-├── backend/           FastAPI + uvicorn (port 8000)
-├── Makefile           install, dev, test, build, clean
-├── .env.example       shared env vars template
-└── DEPLOYMENT.md      Render deploy guide
-```
+### POST /api/record fields
+
+| Field | Required | Description |
+|---|---|---|
+| `audio` | yes | Audio blob (webm/wav/mp4) |
+| `dialect_label` | yes | `naga` or `albay` |
+| `prompt_id` | no | Sentence ID being read |
+| `speaker_id` | no | Existing speaker UUID |
+| `municipality` | no | Speaker's town/city |
+| `age_range` | no | Speaker age bracket |
+| `gender` | no | Speaker gender |
+| `consent_granted` | no | `true` / `false` |
 
 ## Testing
 
 ```bash
-make test                          # both
-cd backend && pytest -xvs          # backend only
-cd frontend && npm test            # frontend only
+make test
+cd backend && pytest -xvs
 ```
 
 ## Deployment

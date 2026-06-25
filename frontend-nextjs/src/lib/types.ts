@@ -1,6 +1,3 @@
-// Types mirror the planned Supabase schema (Users / Sentences / Recordings)
-// so the backend teammate can swap mock data for real API calls 1:1.
-
 export type Region = "naga" | "albay";
 
 export interface User {
@@ -25,7 +22,7 @@ export interface Recording {
   sentence_id: string;
   audio_url: string;
   transcript: string;
-  similarity_score: number; // 0-100
+  similarity_score: number;
   status: RecordingStatus;
   created_at: string;
 }
@@ -33,7 +30,7 @@ export interface Recording {
 export interface DashboardStats {
   total_recordings: number;
   native_contributors: number;
-  average_quality: number; // percentage
+  average_quality: number;
   hours_collected: number;
 }
 
