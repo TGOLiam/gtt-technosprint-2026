@@ -11,7 +11,7 @@ Ebron, Pocsidio, Nadela, Serrano
 
 Tinig Bicol is an open, community-driven repository dedicated to preserving and documenting the Bikol language. The platform enables native speakers and community members to contribute words, translations, example sentences, dialect variations, and authentic audio recordings.
 
-At its current stage, Tinig Bicol focuses on collecting and organizing high-quality language data that can serve as a foundation for future research, educational tools, and language technologies. By building a structured Bikol dataset, the project aims to support future developers, researchers, and initiatives working to preserve and promote the language.
+At its current stage, Tinig Bicol focuses on collecting and organizing high-quality language data that can serve as a foundation for future research, educational tools, and language technologies. By building a structured data pipeline, the project aims to support future developers, researchers, and initiatives working to preserve and promote the language.
 
 ## The Problem
 
