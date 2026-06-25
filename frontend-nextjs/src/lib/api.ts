@@ -13,7 +13,10 @@ export async function getSentences(region?: Region): Promise<SentenceItem[]> {
   const params = region ? `?dialect=${region}` : "";
   const res = await fetch(`${API_URL}/api/prompt${params}`);
 
-  if (!res.ok) throw new Error("Failed to fetch sentences");
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch sentences (${res.status}): ${text}`);
+  }
   const data = await res.json();
 
   return [
@@ -57,7 +60,10 @@ export async function submitRecording(params: {
   form.append("consent_granted", "true");
 
   const res = await fetch(`${API_URL}/api/record`, { method: "POST", body: form });
-  if (!res.ok) throw new Error("Failed to submit recording");
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to submit recording (${res.status}): ${text}`);
+  }
   const data = await res.json();
 
   return {
