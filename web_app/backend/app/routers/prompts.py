@@ -1,42 +1,34 @@
 from fastapi import APIRouter, Query
-
 from app.db import get_db
+from contextlib import closing
 
 router = APIRouter(tags=["prompts"])
 
-
 @router.get("/api/prompt")
 async def get_prompt(dialect: str = Query("", description="Filter by dialect variant")):
-    db = get_db()
+    with closing(get_db()) as db:
+        if dialect:
+            row = db.execute(
+                "SELECT id, text, dialect_variant, category FROM prompts "
+                "WHERE dialect_variant = ? ORDER BY times_recorded ASC, RANDOM() LIMIT 1",
+                (dialect,),
+            ).fetchone()
+        else:
+            row = None
 
-    if dialect:
-        rows = db.execute(
-            "SELECT id, text, dialect_variant, category, times_recorded "
-            "FROM prompts WHERE dialect_variant = ? "
-            "ORDER BY times_recorded ASC, RANDOM() LIMIT 1",
-            (dialect,),
-        ).fetchall()
-    else:
-        rows = db.execute(
-            "SELECT id, text, dialect_variant, category, times_recorded "
-            "FROM prompts ORDER BY times_recorded ASC, RANDOM() LIMIT 1",
-        ).fetchall()
+        # Actual fallback — any dialect
+        if not row:
+            row = db.execute(
+                "SELECT id, text, dialect_variant, category FROM prompts "
+                "ORDER BY times_recorded ASC, RANDOM() LIMIT 1",
+            ).fetchone()
 
-    if not rows:
-        rows = db.execute(
-            "SELECT id, text, dialect_variant, category, times_recorded "
-            "FROM prompts ORDER BY times_recorded ASC, RANDOM() LIMIT 1",
-        ).fetchall()
+        if not row:
+            return {"id": "", "text": "Magayon an panahon ngunyan.", "dialect_variant": "", "category": "fallback"}
 
-    db.close()
-
-    if not rows:
-        return {"id": "", "text": "Magayon an panahon ngunyan.", "dialect_variant": "", "category": "fallback"}
-
-    row = rows[0]
-    return {
-        "id": row["id"],
-        "text": row["text"],
-        "dialect_variant": row["dialect_variant"],
-        "category": row["category"],
-    }
+        return {
+            "id": row["id"],
+            "text": row["text"],
+            "dialect_variant": row["dialect_variant"],
+            "category": row["category"],
+        }
