@@ -1,7 +1,6 @@
 # TinigBicol — Bikol Speech Preprocessing Pipeline
 
-A reproducible CLI tool that transforms raw labeled audio into validated,
-structured Bikol dialect speech data.
+A tool that transforms raw Bikol-language audio/video into structured, annotated speech segments — ready for ASR research, dialect study, and dataset construction.
 
 Drop a folder of audio files and a `manifest.yml` — get standardized 16kHz
 WAV segments with language classification and structured metadata back.
