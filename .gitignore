@@ -14,7 +14,11 @@ web_app/backend/data/
 pipeline/models/
 pipeline/test_data/*.mp3
 .playwright-mcp/
+<<<<<<< HEAD
 test_output/
 testing/
 testing/
 testing/
+=======
+test*/
+>>>>>>> 75e77e0 (widen accepted_langs to include Philippine languages, document rationale)

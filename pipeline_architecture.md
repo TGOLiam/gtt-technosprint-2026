@@ -231,14 +231,20 @@ Model: facebook/mms-lid-256
 |---|---|---|---|
 | 1 | LID model | `facebook/mms-lid-256` | Only model covering Bikol (`bcl`). Transformers pipeline. |
 | 2 | Inference method | HuggingFace `pipeline("audio-classification")` | Simplest integration. torch dependency. |
-| 3 | Default accepted langs | `[bcl, bik, ubl, rbl, fbl, bto, bln, cts, lbl]` | All Bikol macrolanguage codes. |
+| 3 | Default accepted langs | `[bcl, bik, ubl, ...]` + `[tgl, ceb, war, ilo, hil, ...]` | Bikol codes PLUS other Philippine languages. MMS-LID often misclassifies conversational Bikol as Tagalog or Cebuano due to training data composition (religious text only). Wider gate reduces false negatives. Metadata records the actual LID prediction so downstream users can filter post-hoc. |
 | 4 | Default min score | 0.3 | Low bar. False negatives worse than false positives for speech data. |
 | 5 | Batching | One segment at a time | Simplest. Batch processing adds complexity without urgency for v1. |
 | 6 | Model loading | Load once at pipeline start | Avoid reloading 4GB model per segment. |
 | 7 | Rejected audio | Saved to `output/rejected/` | Proves pipeline is honest. Users can inspect false negatives. |
 | 8 | Score precision | Four decimal places | Enough for downstream filtering. |
 
-### Accepted Bikol Language Codes
+### Accepted Language Codes
+
+The pipeline uses a **Philippine language filter** rather than a strict Bikol-only check. This is because MMS-LID-256 was trained on FLEURS (religious text readings) and often misclassifies conversational Bikol as Tagalog, Cebuano, or other Philippine languages with more training data.
+
+All Bikol macrolanguage codes plus related Philippine language codes are accepted. The `manifest.csv` records what MMS-LID *actually* predicted (`bikol_lang` column) so downstream users can apply stricter filtering if needed.
+
+**Bikol codes (primary target):**
 
 | Code | Variety |
 |---|---|
@@ -252,7 +258,28 @@ Model: facebook/mms-lid-256
 | `cts` | Northern Catanduanes Bikol |
 | `bik` | Bikol (macrolanguage) |
 
+<<<<<<< HEAD
 All codes are ISO 639-3 standard, assigned by SIL International. Model coverage verified only for `bcl` and `bik` — the other codes may or may not be recognized by MMS-LID-256. If unrecognized, those segments will be rejected as `not_bikol`. Users can tighten the accepted list per source.
+=======
+**Related Philippine codes (accepted to reduce false negatives):**
+
+| Code | Language |
+|---|---|
+| `tgl` | Tagalog |
+| `ceb` | Cebuano |
+| `war` | Waray |
+| `ilo` | Ilocano |
+| `hil` | Hiligaynon |
+| `pam` | Kapampangan |
+| `pag` | Pangasinan |
+| `mdh` | Maguindanao |
+| `mrw` | Maranao |
+
+All codes are ISO 639-3 standard, assigned by SIL International. Model
+coverage verified only for `bcl` and `bik` — the other codes may or may not
+be recognized by MMS-LID-256. If unrecognized, those segments are rejected as
+`not_bikol`.
+>>>>>>> 75e77e0 (widen accepted_langs to include Philippine languages, document rationale)
 
 ### Configuration
 

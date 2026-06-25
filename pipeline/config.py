@@ -6,7 +6,8 @@ DEFAULTS = {
         "min_duration_s": 1,
     },
     "validate": {
-        "accepted_langs": ["bcl", "bik", "ubl", "rbl", "fbl", "bto", "bln", "cts", "lbl"],
+        "accepted_langs": ["bcl", "bik", "ubl", "rbl", "fbl", "bto", "bln", "cts", "lbl",
+                           "tgl", "ceb", "war", "ilo", "hil", "pam", "pag", "mdh", "mrw"],
         "min_score": 0.3,
     },
 }
