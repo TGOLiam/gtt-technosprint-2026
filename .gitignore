@@ -14,16 +14,14 @@ web_app/backend/data/
 pipeline/models/
 pipeline/test_data/*.mp3
 .playwright-mcp/
-<<<<<<< HEAD
-<<<<<<< HEAD
-test_output/
-testing/
-testing/
-testing/
-=======
-test*/
->>>>>>> 75e77e0 (widen accepted_langs to include Philippine languages, document rationale)
-=======
+/test_output/
 
->>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
-testing/
+# testing/ — keep config files, ignore audio and data
+testing/test_data/
+testing/test_output/*
+!testing/test_output/.gitkeep
+testing/test_input/*.mp3
+testing/test_input/*.mp4
+testing/test_input/*.wav
+testing/test_input/*.m4a
+testing/test_input/*.webm
