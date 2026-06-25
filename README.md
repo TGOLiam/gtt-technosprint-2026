@@ -1,7 +1,3 @@
-Got it. Rewriting now.
-
----
-
 # Tinig Bicol
 
 **A reproducible pipeline for collecting and preprocessing structured Bikol dialect speech data.**
@@ -151,5 +147,3 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for Render deploy instructions.
 Bikol is a regional Philippine language with multiple dialects (Naga, Albay, among others). Despite a substantial speaker population, it remains underrepresented in speech datasets, limiting the development of language technologies that could support the language long-term. Tinig Bicol addresses the dataset gap directly.
 
 ---
-
-Paste this wherever you need it. Let me know if any section needs adjustment.
