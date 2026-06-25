@@ -15,3 +15,6 @@ backend/data/
 scraper/data/raw/
 scraper/data/audio/
 .playwright-mcp/
+AGENTS.md
+DEPLOYMENT.md
+plan.md
