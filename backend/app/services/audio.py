@@ -50,6 +50,11 @@ def get_duration_ms(wav_path: str) -> int:
 
 
 def is_silent(wav_path: str, threshold: float = 0.005) -> bool:
-    data, _ = sf.read(wav_path)
     import numpy as np
+    try:
+        data, _ = sf.read(wav_path, dtype="float32")
+    except Exception:
+        return True
+    if data.size == 0:
+        return True
     return float(np.abs(data).mean()) < threshold

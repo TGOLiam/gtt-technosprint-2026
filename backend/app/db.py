@@ -42,7 +42,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS recordings (
             id TEXT PRIMARY KEY,
             speaker_id TEXT REFERENCES speakers(id),
-            prompt_id TEXT REFERENCES prompts(id),
+            prompt_id TEXT,
             wav_path TEXT NOT NULL,
             original_format TEXT DEFAULT '',
             duration_ms INTEGER DEFAULT 0,

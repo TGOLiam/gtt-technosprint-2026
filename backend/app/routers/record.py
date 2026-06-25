@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Form, UploadFile
+from fastapi.responses import JSONResponse
 
 from app.db import get_db
 from app.services.audio import convert_to_wav, get_duration_ms, is_silent, save_upload
@@ -26,7 +27,8 @@ async def record(
     if speaker_id:
         existing = db.execute("SELECT id FROM speakers WHERE id = ?", (speaker_id,)).fetchone()
         if not existing:
-            return {"error": "speaker not found", "speaker_id": speaker_id}, 404
+            db.close()
+            return JSONResponse({"error": "speaker not found", "speaker_id": speaker_id}, 404)
     else:
         speaker_id = str(uuid.uuid4())
         db.execute(
@@ -41,19 +43,22 @@ async def record(
     wav_path = convert_to_wav(raw_path, rec_id)
 
     if wav_path is None:
-        return {"error": "audio conversion failed"}, 500
+        db.close()
+        return JSONResponse({"error": "audio conversion failed"}, 500)
 
     duration_ms = get_duration_ms(wav_path)
 
     if duration_ms < 500:
-        return {"error": "recording too short", "duration_ms": duration_ms}, 400
+        db.close()
+        return JSONResponse({"error": "recording too short", "duration_ms": duration_ms}, 400)
 
     if is_silent(wav_path):
-        return {"error": "recording is silent"}, 400
+        db.close()
+        return JSONResponse({"error": "recording is silent"}, 400)
 
     db.execute(
         "INSERT INTO recordings VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
-        (rec_id, speaker_id, prompt_id, wav_path, original_format, duration_ms),
+        (rec_id, speaker_id, prompt_id or None, wav_path, original_format, duration_ms),
     )
 
     if prompt_id:
