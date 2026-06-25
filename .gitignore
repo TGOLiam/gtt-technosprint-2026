@@ -15,6 +15,7 @@ pipeline/models/
 pipeline/test_data/*.mp3
 .playwright-mcp/
 <<<<<<< HEAD
+<<<<<<< HEAD
 test_output/
 testing/
 testing/
@@ -22,3 +23,7 @@ testing/
 =======
 test*/
 >>>>>>> 75e77e0 (widen accepted_langs to include Philippine languages, document rationale)
+=======
+
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
+testing/

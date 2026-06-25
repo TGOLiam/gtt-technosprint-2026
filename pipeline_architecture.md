@@ -18,7 +18,7 @@
          ║                                ║
          ║  Stage 1: NORMALIZE (ffmpeg)   ║
          ║  Stage 2: SEGMENT  (ffmpeg)    ║
-         ║  Stage 3: VALIDATE (MMS-LID)   ║
+         ║  Stage 3: CLASSIFY (MMS-LID)   ║
          ║                                ║
          ╚════════════════╤════════════════╝
                           │
@@ -30,7 +30,85 @@
               └── pipeline.log
 ```
 
+<<<<<<< HEAD
 **postprocess.py** walks `raw/` looking for `*.json` sidecars. For each one, if a matching audio/video file exists with the same basename, it runs the three-stage pipeline. If no sidecar, the file is skipped.
+=======
+The pipeline reads a single `manifest.yml` from the input directory that labels
+every media file and configures per-file processing parameters. Each file goes
+through three stages. The output receives segmented WAVs with dual-signal
+metadata: the user's claimed `dialect_label` alongside MMS-LID's `predicted_lang`.
+
+---
+
+## CLI
+
+```
+python pipeline/run.py <input_dir> <output_dir>
+
+Options:
+  --skip-classify   Run only stages 1-2, skip language classification
+  --keep-temp       Keep temporary files for debugging
+  -v, --verbose     Print per-file progress
+```
+
+`output_dir` is cleared before each run. Both arguments are required.
+
+Temp files go to system temp (`/tmp/pipeline_{uuid}/`) and are cleaned after
+the run unless `--keep-temp` is passed.
+
+### Run Summary (GPU)
+
+```
+$ python pipeline/run.py my_batch/ output/
+
+Stage 1 (normalize):  5/5 files ✓
+Stage 2 (segment):    42 segments
+Stage 3 (classify):   Using CUDA (NVIDIA GeForce RTX 3060)
+                      42/42 classified in 4.2s (31 kept, 11 rejected)
+
+Output:
+  output/audio/                     31 segments
+  output/rejected/                  11 segments
+  output/manifest.csv               31 rows
+  output/rejected.csv               11 rows
+  output/pipeline.log               58 lines
+
+Done.
+```
+
+### Run Summary (CPU)
+
+```
+$ python pipeline/run.py my_batch/ output/
+
+Stage 1 (normalize):  5/5 files ✓
+Stage 2 (segment):    42 segments
+Stage 3 (classify):   Downloading MMS-LID-256 (3.9 GB, one-time)...
+                      ⚠ No GPU detected — running on CPU (5-15s/clip)
+                      For faster processing, see the Colab fallback below.
+                      42/42 classified in 4m 12s (31 kept, 11 rejected)
+
+Output:
+  output/audio/                     31 segments
+  output/rejected/                  11 segments
+  output/manifest.csv               31 rows
+  output/rejected.csv               11 rows
+  output/pipeline.log               58 lines
+
+Done.
+```
+
+### Colab Fallback
+
+If your machine lacks a GPU, the Colab notebook processes Stage 3 on a free
+T4 GPU (~100× faster than CPU):
+
+1. Run stages 1-2 locally: `python pipeline/run.py my_batch/ output/ --skip-classify`
+2. The segmented WAVs are in `output/audio/`
+3. Open `pipeline/validate.ipynb` in [Google Colab](https://colab.research.google.com/)
+4. Upload `output/audio/` as a zip → Runtime → Run All
+5. Download `manifest.csv` and `rejected.csv`, place in `output/`
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 
 ---
 
@@ -38,6 +116,7 @@
 
 ### Sidecar JSON Format
 
+<<<<<<< HEAD
 Each audio source must have a sidecar `*.json` next to it:
 
 ```json
@@ -47,6 +126,29 @@ Each audio source must have a sidecar `*.json` next to it:
   "source_name": "bible-central-bikol",
   "source_type": "bible_api"
 }
+=======
+```yaml
+# Global defaults — applied to all files unless overridden
+defaults:
+  dialect_label: naga
+  confidence: high
+  segment:
+    max_duration_s: 10
+    min_duration_s: 1
+
+# Per-file entries
+files:
+  - path: MAT_01.mp3
+    source_name: bible-central-bikol
+
+  - path: MAT_02.mp3
+    source_name: bible-central-bikol
+
+  - path: interview.mp4
+    dialect_label: albay
+    confidence: inferred
+    source_type: field_recording
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 ```
 
 All four fields are required.
@@ -210,7 +312,7 @@ The "one segment if ≤ max" rule means a 10s file produces one segment, not two
 
 ---
 
-## Stage 3: VALIDATE
+## Stage 3: CLASSIFY
 
 ### Input → Output
 
@@ -221,8 +323,13 @@ temp/segmented/{source}/{name}_000.wav   (≤ max_duration_s)
 Model: facebook/mms-lid-256
      │  Inference returns [(lang, score), ...]
      │
+<<<<<<< HEAD
      ├── top-1 lang ∈ accepted_langs AND score ≥ min_score → KEEP → output/audio/
      └── otherwise → REJECT → output/rejected/
+=======
+      ├── lang ∈ known PH codes → KEEP → output_dir/audio/
+      └── otherwise → REJECT → output_dir/rejected/
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 ```
 
 ### Decisions
@@ -231,12 +338,65 @@ Model: facebook/mms-lid-256
 |---|---|---|---|
 | 1 | LID model | `facebook/mms-lid-256` | Only model covering Bikol (`bcl`). Transformers pipeline. |
 | 2 | Inference method | HuggingFace `pipeline("audio-classification")` | Simplest integration. torch dependency. |
+<<<<<<< HEAD
 | 3 | Default accepted langs | `[bcl, bik, ubl, ...]` + `[tgl, ceb, war, ilo, hil, ...]` | Bikol codes PLUS other Philippine languages. MMS-LID often misclassifies conversational Bikol as Tagalog or Cebuano due to training data composition (religious text only). Wider gate reduces false negatives. Metadata records the actual LID prediction so downstream users can filter post-hoc. |
 | 4 | Default min score | 0.3 | Low bar. False negatives worse than false positives for speech data. |
 | 5 | Batching | One segment at a time | Simplest. Batch processing adds complexity without urgency for v1. |
 | 6 | Model loading | Load once at pipeline start | Avoid reloading 4GB model per segment. |
 | 7 | Rejected audio | Saved to `output/rejected/` | Proves pipeline is honest. Users can inspect false negatives. |
 | 8 | Score precision | Four decimal places | Enough for downstream filtering. |
+=======
+| 3 | Gate logic | PH language filter: `{bcl, bto, ubl, tgl, ceb, ilo, hil, war}` | MMS-LID often misclassifies conversational Bikol as Tagalog or Cebuano. Wider gate reduces false negatives. `manifest.csv` records both `dialect_label` (user claim) and `predicted_lang` (MMS prediction) for downstream filtering. |
+| 4 | Batching | One segment at a time | Simplest. Batch processing adds complexity without urgency for v1. |
+| 5 | Model loading | Load once at pipeline start | Avoid reloading 4GB model per segment. |
+| 6 | Rejected audio | Saved to `output_dir/rejected/` | Proves pipeline is honest. Users can inspect false negatives. |
+| 7 | Score precision | Four decimal places | Enough for downstream filtering. |
+| 8 | GPU usage | Auto-detect via `torch.cuda.is_available()`. No config required. | `transformers` pipeline loads to GPU automatically. MPS (Apple Silicon) also supported. Falls back to CPU silently with a warning pointing to the Colab fallback. |
+| 9 | Model cache | `pipeline/models/` via `cache_dir` | Keeps 3.9 GB model in project tree. One-time download. gitignored. `HF_HOME` env var overrides. |
+
+### GPU Detection
+
+`validate.py` checks for hardware acceleration at startup:
+
+```
+GPU check on startup:
+  ├── CUDA available?    → model loads on GPU     → ~0.1s per clip
+  ├── MPS available?     → model loads on MPS     → ~0.3-0.5s per clip
+  └── neither            → stays on CPU           → 5-15s per clip
+                                    │
+                                    ▼
+                        ⚠ "No GPU detected. Stage 3 will run on CPU
+                           (5-15s per clip). For large batches,
+                           see the Colab fallback below."
+```
+
+The CPU warning prints once and includes a direct link to the Colab notebook.
+If GPU is available, no message is printed — it just works silently.
+
+### Model Storage
+
+The model is downloaded once on first run and cached for subsequent runs.
+
+```python
+model = pipeline(
+    "audio-classification",
+    model="facebook/mms-lid-256",
+    cache_dir="pipeline/models/",
+)
+```
+
+| Behavior | Details |
+|---|---|
+| Default location | `~/.cache/huggingface/` |
+| Project convention | `pipeline/models/models--facebook--mms-lid-256/` via `cache_dir` |
+| Disk size | ~3.9 GB (safetensors format) |
+| First run | Downloads model from HuggingFace (~30-60s) |
+| Subsequent runs | Loads from cache (instant) |
+| gitignored | `pipeline/models/` is in `.gitignore` |
+
+Users can override the cache location via the `HF_HOME` environment variable
+if they prefer a different path.
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 
 ### Accepted Language Codes
 
@@ -278,6 +438,7 @@ All codes are ISO 639-3 standard, assigned by SIL International. Model coverage 
 All codes are ISO 639-3 standard, assigned by SIL International. Model
 coverage verified only for `bcl` and `bik` — the other codes may or may not
 be recognized by MMS-LID-256. If unrecognized, those segments are rejected as
+<<<<<<< HEAD
 `not_bikol`.
 >>>>>>> 75e77e0 (widen accepted_langs to include Philippine languages, document rationale)
 
@@ -288,6 +449,9 @@ validate:
   accepted_langs: [bcl, bik]    # override — only Central Bikol for this source
   min_score: 0.3
 ```
+=======
+`not_ph_language`.
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 
 If `validate` block is absent, defaults apply.
 
@@ -296,17 +460,26 @@ If `validate` block is absent, defaults apply.
 Keep:
 
 ```json
+<<<<<<< HEAD
 {"ts": "2026-06-25T15:00:02", "stage": "validate", "segment": "temp/segmented/bible-central-bikol/MAT_01_000.wav", "status": "keep", "top_lang": "bcl", "score": 0.9421}
+=======
+{"ts": "2026-06-25T15:00:02", "stage": "classify", "segment": "MAT_01_000.wav", "status": "keep", "lang": "bcl", "score": 0.9421}
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 ```
 
 Reject:
 
 ```json
+<<<<<<< HEAD
 {"ts": "2026-06-25T15:00:03", "stage": "validate", "segment": "temp/segmented/bible-central-bikol/MAT_01_005.wav", "status": "reject", "top_lang": "eng", "score": 0.8732, "reason": "not_bikol"}
 ```
 
 ```json
 {"ts": "2026-06-25T15:00:04", "stage": "validate", "segment": "temp/segmented/bible-central-bikol/MAT_01_012.wav", "status": "reject", "top_lang": "bcl", "score": 0.2103, "reason": "low_confidence"}
+=======
+{"ts": "2026-06-25T15:00:03", "stage": "classify", "segment": "MAT_01_005.wav", "status": "reject", "lang": "eng", "score": 0.8732, "reason": "not_ph_language"}
+```
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 ```
 
 ---
@@ -324,8 +497,8 @@ Reject:
 | `source_name` | string | From sidecar JSON |
 | `source_type` | string | From sidecar JSON |
 | `duration_ms` | integer | ffprobe on segment WAV |
-| `bikol_lang` | ISO code (e.g. `bcl`) | MMS-LID top-1 language |
-| `bikol_score` | 0.0–1.0 | MMS-LID confidence |
+| `predicted_lang` | ISO code (e.g. `bcl`) | MMS-LID top-1 language |
+| `predicted_score` | 0.0–1.0 | MMS-LID confidence |
 
 ### rejected.csv
 
@@ -333,7 +506,7 @@ Same columns, plus:
 
 | Column | Type |
 |---|---|
-| `reject_reason` | `not_bikol`, `low_confidence`, `too_short`, `normalize_failed` |
+| `reject_reason` | `not_ph_language`, `lid_error` |
 
 ### pipeline.log
 
@@ -341,7 +514,7 @@ JSONL format. One line per event. Events include:
 
 - `normalize` — one per input file (success or failure)
 - `segment` — one per input file (count of segments produced)
-- `validate` — one per segment (keep or reject)
+- `classify` — one per segment (keep or reject)
 
 ---
 
@@ -500,6 +673,25 @@ pyyaml>=6.0
 
 ---
 
+<<<<<<< HEAD
+=======
+## Edge Cases
+
+| Scenario | Behavior |
+|---|---|
+| No `manifest.yml` in input dir | Error, exit |
+| Entry in `files` has no matching media file | Error, skip |
+| Media file exists with no matching `files` entry | Skip with warning |
+| `defaults` block omitted | Hardcoded fallback defaults applied |
+| All files fail Stage 1 | Stages 2 and 3 run on zero files, outputs empty CSVs |
+| One segment takes >60s for LID | Timeout, log, reject as `lid_timeout` |
+| Pipeline interrupted (Ctrl+C) | Temp files remain (can inspect with `--keep-temp`) |
+| Output directory has files from previous run | Auto-cleared before each run. Fresh output every time. |
+| Empty audio file (0 bytes) | Fails Stage 1, logged |
+
+---
+
+>>>>>>> 68ebee6 (sync architecture doc with implemented pipeline)
 ## Deferred
 
 | Item | Why |
