@@ -1,0 +1,80 @@
+id,text,dialect_variant,category,source
+p0000,"Banggi na, magturug na kita.",naga,diagnostic,manual
+p0001,"Gab-i na, magturug na kita.",albay,diagnostic,manual
+p0002,Mayo nin tawo sa harong.,naga,diagnostic,manual
+p0003,Warâ nin tawo sa balay.,albay,diagnostic,manual
+p0004,Magkakan kita nin pamahaw.,naga,diagnostic,manual
+p0005,Magkaon kita nin pamahaw.,albay,diagnostic,manual
+p0006,An damulag nag-aarado sa uma.,naga,diagnostic,manual
+p0007,An karabaw nag-aarado sa uma.,albay,diagnostic,manual
+p0008,Harong mi ini sa Naga.,naga,diagnostic,manual
+p0009,Balay mi ini sa Legazpi.,albay,diagnostic,manual
+p0010,Maugma akong magin Bikolano.,naga,diagnostic,manual
+p0011,Dai ko aram kun sain siya nagduman.,naga,diagnostic,manual
+p0012,Dai ko aram kun hain siya nagduman.,albay,diagnostic,manual
+p0013,Mabakal ako nin sira sa saod.,naga,diagnostic,manual
+p0014,Mabakal ako nin sira sa sadan.,albay,diagnostic,manual
+p0015,Nag-istar ako sa may simbahan.,naga,diagnostic,manual
+p0016,Magayon an panahon ngunyan.,naga,diagnostic,manual
+p0017,Salamat sa saimong tabang.,,general,manual
+p0018,Pwede tabi akong maghapot?,,general,manual
+p0019,Hain an pinakaharaning ospital?,,general,manual
+p0020,Gurano ini kamahal?,,general,manual
+p0021,Paki-ulay tabi nin luway-luway.,,general,manual
+p0022,An buhay sa probinsya mas simple.,,general,manual
+p0023,Dakulang problema ini sa komunidad.,,general,manual
+p0024,An satuyang lengguwahe importante sa kultura.,,general,manual
+p0025,Dai dapat kalimutan an satuyang ginikanan.,,general,manual
+p0026,An mga aki dapat makanuod nin Bikol.,,general,manual
+p0027,Pirmi kong nadadangog an kantang ini.,,general,manual
+p0028,An satuyang mga ginikanan mayaman sa istorya.,,general,manual
+p0029,Pwede kitang maghirilingan sa maabot na aldaw.,,general,manual
+p0030,Dakula an pasasalamat ko saindo gabos.,,general,manual
+p0031,Pirmi akong nag-eerok digdi sa probinsya.,,general,manual
+p0032,Kaipuhan ta magtarabangan bilang sarong komunidad.,,general,manual
+p0033,An edukasyon importante sa lambang aki.,,general,manual
+p0034,Dai paglingawan an satuyang tradisyon.,,general,manual
+p0035,Magayon an satuyang lugar pag tig-init.,,general,manual
+p0036,Ini an samuyang istaran puon pa kan aki ako.,,general,manual
+p0037,Ta namumutan nin Diyos an kinaban.,,bible,bcl_bible
+p0038,Kaya itinao Niya an Saiyang bugtong na Aki.,,bible,bcl_bible
+p0039,Tanganing an siisay man na nagtutubod sa Saiya dai mapahamak.,,bible,bcl_bible
+p0040,Kundi magkaigwa nin buhay na daing kasagkoran.,,bible,bcl_bible
+p0041,Ako an dalan asin an katotoohan saka an buhay.,,bible,bcl_bible
+p0042,An kapinunan kan tataramon iyo an Diyos.,,bible,bcl_bible
+p0043,Asin an tataramon kaibahan kan Diyos.,,bible,bcl_bible
+p0044,"An Los Baños sarong primera klaseng banwaan sa provincia kan Laguna, Filipinas.",,general,bcl_wikipedia
+p0045,"An designadong zip code kaini iyo 4030, 4031.",,general,bcl_wikipedia
+p0046,Igwa ining sukol na 54.22 kilometro kwadrado.,,general,bcl_wikipedia
+p0047,"An New Bataan sarong ikaduwang klaseng banwaan kan probinsya nin Davao de Oro, Filipinas.",,general,bcl_wikipedia
+p0048,Igwa ining sukol na 553.15 kilometro kwadrado.,,general,bcl_wikipedia
+p0049,An Oriental Mindoro sarong probinsya kan Republika kan Filipinas sa rehiyon MIMAROPA sa Luzon.,,general,bcl_wikipedia
+p0050,"Igwa ining sukol na 4,238.38 kilometro kwadrado.",,general,bcl_wikipedia
+p0051,An designadong area code kaini iyo +63 (0)43.,,general,bcl_wikipedia
+p0052,An Corvara sarong komyun asin banwaan sa Provincia nin Pescara sa rehiyon Abruzzo kan Italya.,,general,bcl_wikipedia
+p0053,"An Atok sarong ikaapat na klaseng banwaan sa probinsya nin Benguet, Filipinas.",,general,bcl_wikipedia
+p0054,An designadong zip code kaini iyo 2612.,,general,bcl_wikipedia
+p0055,Igwa ining sukol na 214.99 kilometro kwadrado.,,general,bcl_wikipedia
+p0056,Siya namundag sa Bgy.,,general,bcl_wikipedia
+p0057,"Matoogtoog, Mercedes, Camarines Norte; siya an ika-tolong aki kan mag-agom na Ponciano S.",,general,bcl_wikipedia
+p0058,"Aureus kan Libmanan, Camarines Sur asin Iluminada Soria kan Basud, Camarines Norte.",,general,bcl_wikipedia
+p0059,Burgos asin Gen.,,general,bcl_wikipedia
+p0060,Nagin man siyang kolumnista asta konsultant editoryal kan Bicol Mail.,,general,bcl_wikipedia
+p0061,Pirang dekada ini regular na nagluluwas sa peryodikong ini.,,general,bcl_wikipedia
+p0062,"Si Jocelyn ""Jo"" Alarcon Bisuña (kamundagan: Pebrero 7, 1957) sarong Bikolanang parasurat.",,general,bcl_wikipedia
+p0063,Kaapíl si Bisuña kan Kaboronyugan Cultural Group asin kan Kabulig Bikol Writer's Association.,,general,bcl_wikipedia
+p0064,Nagtukdô siya sa La Consolacion na Kolehiyo sa Syudad nin Iriga.,,general,bcl_wikipedia
+p0065,"Nakaistar sya sa Baao, Camarines Sur.",,general,bcl_wikipedia
+p0066,"Saiyang nasaray an titulong ini kan linabanan siya ni Ricardo Mayorga kan Marso 13, 2011.",,general,bcl_wikipedia
+p0067,Na-TKO niya si Mayorga sa ika-doseng hornada.,,general,bcl_wikipedia
+p0068,Igwa ining sukol na 712.91 kilometro kwadrado.,,general,bcl_wikipedia
+p0069,"An Salay sarong ikaapat na klaseng banwaan na namumugtak sa probinsya nin Misamis Oriental, Filipinas.",,general,bcl_wikipedia
+p0070,Igwa ining sukol na 92.79 kilometro kwadrado.,,general,bcl_wikipedia
+p0071,An tinanom na ini ginugusi huli sa unod kaini (rhizome).,,general,bcl_wikipedia
+p0072,Ini an ikatolong pinakadakulang moske sa Latin Amerika.,,general,bcl_wikipedia
+p0073,"Sinalogan nin marmol, pasil daa maka-igo igdi an sobra 1,000 katawo.",,general,bcl_wikipedia
+p0074,An .ad iyo an Internet country code top-level domain (ccTLD) para sa Andorra.,,general,bcl_wikipedia
+p0075,Mahihiling sa probinsya kan Sur na Sulawesi an pirang mga tataramon sa Selibiko (hal.,,general,bcl_wikipedia
+p0076,ika-12 – 13 siglo) sarong dinastiyang Hindu na magpoon sa rehiyong Bengal kan subkontinenteng Indiano.,,general,bcl_wikipedia
+p0077,An dinastiya pinadalagan kan sirangang Bengal pagkatapos kan Dinastiyang Sena.,,general,bcl_wikipedia
+p0078,"An kapitolyo kan dinastiya, Bikrampur, sa ngunyan Distrito kan Munshiganj kan Banglades.",,general,bcl_wikipedia
