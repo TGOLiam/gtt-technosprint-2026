@@ -27,8 +27,10 @@ async def record(
     if speaker_id:
         existing = db.execute("SELECT id FROM speakers WHERE id = ?", (speaker_id,)).fetchone()
         if not existing:
-            db.close()
-            return JSONResponse({"error": "speaker not found", "speaker_id": speaker_id}, 404)
+            db.execute(
+                "INSERT INTO speakers VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+                (speaker_id, dialect_label, municipality, age_range, gender, license_choice, int(consent_granted)),
+            )
     else:
         speaker_id = str(uuid.uuid4())
         db.execute(
