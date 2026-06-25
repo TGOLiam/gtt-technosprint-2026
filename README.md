@@ -3,6 +3,8 @@
 Members:
 Ebron, Pocsidio, Nadela, Serrano
 
+## Project Case: Tinig sa Liwanag
+
 ## Overview
 
 Tinig Bicol is an open, community-driven digital repository designed to preserve and promote the Bikol language. The platform allows native speakers, educators, and community members to contribute Bikol words, translations, example sentences, dialect variations, and authentic audio recordings.
