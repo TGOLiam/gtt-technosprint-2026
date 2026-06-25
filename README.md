@@ -1,4 +1,6 @@
-# GTT: Tinig Bicol
+# Group Name: GTT
+## Project: Tinig Bicol
+
 ## Preserving the Bicol Lanuage, One Word at a Time
 Members:
 Ebron, Pocsidio, Nadela, Serrano
@@ -7,9 +9,9 @@ Ebron, Pocsidio, Nadela, Serrano
 
 ## Overview
 
-Tinig Bicol is an open, community-driven digital repository designed to preserve and promote the Bikol language. The platform allows native speakers, educators, and community members to contribute Bikol words, translations, example sentences, dialect variations, and authentic audio recordings.
+Tinig Bicol is an open, community-driven repository dedicated to preserving and documenting the Bikol language. The platform enables native speakers and community members to contribute words, translations, example sentences, dialect variations, and authentic audio recordings.
 
-By combining language preservation with collaborative knowledge sharing, Tinig Bicol aims to create a living archive of the Bikol language while making it accessible to learners, researchers, and future generations.
+At its current stage, Tinig Bicol focuses on collecting and organizing high-quality language data that can serve as a foundation for future research, educational tools, and language technologies. By building a structured Bikol dataset, the project aims to support future developers, researchers, and initiatives working to preserve and promote the language.
 
 ## The Problem
 
