@@ -13,6 +13,64 @@ Tinig Bicol is an open, community-driven repository dedicated to preserving and 
 
 At its current stage, Tinig Bicol focuses on collecting and organizing high-quality language data that can serve as a foundation for future research, educational tools, and language technologies. By building a structured data pipeline, the project aims to support future developers, researchers, and initiatives working to preserve and promote the language.
 
+## The Pipeline Artifact
+
+The core hackathon contribution is a **reproducible preprocessing
+pipeline** that transforms raw labeled media into validated, structured
+Bikol dialect speech data.
+
+### Input
+
+Any audio source with a dialect label — YouTube videos, radio streams,
+Bible audio, field recordings, or app-recorded contributions. Sources
+are registered in `sources.yaml` with a `confidence` tag.
+
+### Pipeline Stages
+
+```
+raw media (any format, any source)
+     │
+     ▼
+Stage 1 ─── NORMALIZATION
+            Resample to 16kHz mono, convert to WAV.
+            Any audio/video format accepted.
+     │
+     ▼
+Stage 2 ─── SEGMENTATION
+            Split long recordings into 3-10 second utterances.
+            Silence and noise discarded.
+     │
+     ▼
+Stage 3 ─── VALIDATION
+            Verify segments contain Bikol speech.
+            Non-Bikol audio (English, Tagalog) rejected.
+     │
+     ▼
+pipeline/output/
+├── audio/{nag,alb}_*.wav    Validated speech segments
+├── manifest.csv             Structured metadata per segment
+├── rejected.csv             Segments that failed validation
+└── pipeline.log             Full provenance (JSONL)
+```
+
+### Output Schema
+
+`manifest.csv`: `segment_id`, `wav_path`, `dialect_label`, `confidence`,
+`bikol_lang` (ISO code), `bikol_score` (validation confidence),
+`source_type`, `source_name`, `duration_ms`, `sample_rate`.
+
+### Reproducibility
+
+Anyone can add their own audio sources to `sources.yaml` and re-run:
+
+```bash
+python scraper/scrape_audio.py     # Download raw audio
+python scraper/postprocess.py      # Normalize → segment → validate
+```
+
+The Bikol language filter is configurable. To adapt for another Philippine
+language, change the target ISO codes in the validation stage.
+
 ## The Problem
 
 Many younger Bikolanos are growing up with limited exposure to their native language due to urbanization, migration, and the dominance of Filipino and English in daily communication.
