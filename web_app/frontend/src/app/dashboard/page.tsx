@@ -269,13 +269,6 @@ export default function DashboardPage() {
                         <p className="text-center text-sm font-medium text-leaf">
                           ✓ Files ready
                         </p>
-                        <Button
-                          onClick={handleClear}
-                          size="sm"
-                          className="w-full"
-                        >
-                          Clear
-                        </Button>
                       </div>
                     )}
                   </>
@@ -388,6 +381,9 @@ export default function DashboardPage() {
                         <Button onClick={handleStart} disabled={selectedFiles.length === 0} size="sm">
                           Start
                         </Button>
+                        <Button onClick={handleClear} size="sm">
+                          Clear
+                        </Button>
                         <Button disabled size="sm">
                           <Download size={16} /> Download Output (zip)
                         </Button>
@@ -461,6 +457,9 @@ export default function DashboardPage() {
                           <Square size={16} /> Stop
                         </Button>
                       )}
+                      <Button onClick={handleClear} size="sm">
+                        Clear
+                      </Button>
                       <a
                         href={run.status === "done" ? getPipelineDownloadUrl(run.run_id) : undefined}
                       >
