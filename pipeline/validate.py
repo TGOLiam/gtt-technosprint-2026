@@ -1,7 +1,11 @@
+import warnings
+
 import torch
 from transformers import pipeline
 
 from pipeline.config import MODEL_ID, KNOWN_PH_LANGS
+
+warnings.filterwarnings("ignore", message="You are sending unauthenticated requests")
 
 
 def detect_device():
@@ -14,11 +18,7 @@ def detect_device():
 
 def load_model(cache_dir):
     device = detect_device()
-    if device == "cpu":
-        print("  \u26a0 No GPU detected \u2014 running on CPU (5-15s/clip)")
-        print("    For faster processing, see the Colab fallback in the README.")
-    else:
-        print(f"  Using {device.upper()}")
+    print("  loading model...")
 
     model = pipeline(
         "audio-classification",
