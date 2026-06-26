@@ -141,7 +141,7 @@ def main():
         seg_files += 1
         seg_count += len(segs)
         seg_str = _fmt(f"seg({len(segs)})", GREEN)
-        seg_indent = counter_width + 54
+        seg_indent = 8
 
         # Stage 3
         if args.skip_classify:
