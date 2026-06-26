@@ -110,8 +110,12 @@ export default function DashboardPage() {
     if (newFiles.length === 0) return;
     setSelectedFiles(prev => [...prev, ...newFiles]);
     setFileNames(prev => [...prev, ...newFiles.map(f => f.name)]);
-    setSubmitted(true);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleSubmit() {
+    if (selectedFiles.length === 0) return;
+    setSubmitted(true);
   }
 
   async function handleStart() {
@@ -250,9 +254,20 @@ export default function DashboardPage() {
                         </div>
                       </dl>
                     </div>
-                    <p className="mt-4 text-center text-sm font-medium text-leaf">
-                      ✓ {fileNames.length} file{fileNames.length !== 1 ? 's' : ''} selected
-                    </p>
+                    {!submitted ? (
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={selectedFiles.length === 0}
+                        className="mt-4 w-full"
+                        size="sm"
+                      >
+                        Submit
+                      </Button>
+                    ) : (
+                      <p className="mt-4 text-center text-sm font-medium text-leaf">
+                        ✓ Files ready — add more or start
+                      </p>
+                    )}
                   </>
                 )}
               </Card>
