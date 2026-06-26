@@ -1,3 +1,6 @@
+import os
+os.environ["TQDM_DISABLE"] = "1"
+
 import argparse
 import shutil
 import sys
@@ -138,6 +141,7 @@ def main():
         seg_files += 1
         seg_count += len(segs)
         seg_str = _fmt(f"seg({len(segs)})", GREEN)
+        seg_indent = counter_width + 54
 
         # Stage 3
         if args.skip_classify:
@@ -148,7 +152,9 @@ def main():
                 output.add_row(entry, seg, "", 0.0, dur)
                 kept += 1
             result_str = _fmt(f"{len(segs)} segs", GREEN)
+            print(f"  {counter:<{counter_width}s}  {display_name:<26s}  {norm_str:<8s}  {seg_str:<12s}  {result_str}")
         else:
+            print(f"  {counter:<{counter_width}s}  {display_name:<26s}  {norm_str:<8s}  {seg_str:<12s}")
             for seg in segs:
                 result = classify(model, seg)
                 dur = get_duration_ms(seg)
@@ -173,26 +179,12 @@ def main():
                 output.log("classify", seg.stem, "keep" if result["is_ph"] else "reject",
                            lang=result["lang"], score=result["score"])
 
-                if args.verbose:
-                    s = _fmt("✓", GREEN) if result["is_ph"] else _fmt("✗", RED)
-                    ls = result["lang"] or "?"
-                    pad = counter_width + 2
-                    print(f"  {'':{pad}s}  {'':26s}  {'':8s}  {'':12s}  {s}  {ls}  ({result['score']:.3f})")
+                s = _fmt("✓", GREEN) if result["is_ph"] else _fmt("✗", RED)
+                lang = result["lang"] or "?"
+                print(f"{'':>{seg_indent}s}{s}  {lang}  {result['score']:.3f}  done")
 
             kept += file_kept
             rejected += file_rejected
-
-            if file_kept > 0 and file_rejected == 0:
-                top = max(file_langs, key=file_langs.get) if file_langs else ""
-                result_str = _fmt(f"{file_kept} kept", GREEN)
-                if top:
-                    result_str += f"  ({top})"
-            elif file_rejected > 0 and file_kept == 0:
-                result_str = _fmt(f"{file_rejected} rejected", RED)
-            else:
-                result_str = f"{_fmt(str(file_kept) + ' kept', GREEN)}/{_fmt(str(file_rejected) + ' rej', RED)}"
-
-        print(f"  {counter:<{counter_width}s}  {display_name:<26s}  {norm_str:<8s}  {seg_str:<12s}  {result_str}")
 
     # ── Summary ──
     elapsed = time.time() - start
