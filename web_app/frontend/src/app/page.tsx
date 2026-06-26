@@ -17,7 +17,7 @@ export default function HomePage() {
         {/* Hero */}
         <section className="mx-auto max-w-5xl px-6 pt-20 pb-16 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border-2 border-maroon/20 bg-white/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-maroon">
-            Naga &amp; Albay accents &middot; more coming soon
+             more coming soon
           </span>
 
           <h1 className="font-display mt-6 text-5xl font-extrabold leading-[1.05] text-ink sm:text-6xl md:text-7xl">
