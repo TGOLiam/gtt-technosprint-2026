@@ -1,23 +1,28 @@
+SHELL := cmd.exe
+.SHELLFLAGS := /C
+
 .PHONY: install dev test build clean
 
-FRONTEND_DIR=web_app/frontend
-BACKEND_DIR=web_app/backend
+FRONTEND_DIR=web_app\frontend
+BACKEND_DIR=web_app\backend
 
 install:
 	cd $(FRONTEND_DIR) && npm install
 	cd $(BACKEND_DIR) && pip install -r requirements.txt
 
 dev:
-	trap 'kill 0' EXIT; \
-		cd $(BACKEND_DIR) && uvicorn app.main:app --reload --port 8000 & \
-		cd $(FRONTEND_DIR) && npm run dev
+	start "Backend" cmd /K "cd $(BACKEND_DIR) && python -m uvicorn app.main:app --reload --port 8000"
+	timeout /t 2 >nul
+	start "" http://localhost:3000
+	cd $(FRONTEND_DIR) && npm run dev
 
 test:
-	cd $(BACKEND_DIR) && pytest -xvs
+	cd $(BACKEND_DIR) && python -m pytest -xvs
 
 build:
 	cd $(FRONTEND_DIR) && npm run build
 
 clean:
-	rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/.next
-	find $(BACKEND_DIR) -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	if exist "$(FRONTEND_DIR)\node_modules" rmdir /s /q "$(FRONTEND_DIR)\node_modules"
+	if exist "$(FRONTEND_DIR)\.next" rmdir /s /q "$(FRONTEND_DIR)\.next"
+	powershell -NoProfile -Command "Get-ChildItem -Path '$(BACKEND_DIR)' -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
