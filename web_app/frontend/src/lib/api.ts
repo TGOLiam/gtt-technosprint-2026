@@ -175,7 +175,7 @@ export async function startPipelineRun(params: {
   files: File[];
   sourceName?: string;
   sourceType?: string;
-  dialect?: Region;
+  dialect?: string;
 }): Promise<{ run_id: string }> {
   if (USE_MOCK) {
     await sleep(400);

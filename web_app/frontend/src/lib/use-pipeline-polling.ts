@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPipelineRun, startPipelineRun, stopPipelineRun } from "@/lib/api";
-import { PipelineRun, Region } from "@/lib/types";
+import { PipelineRun } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 1500;
 const SESSION_KEY = "active_pipeline_run";
@@ -75,7 +75,7 @@ export function usePipelinePolling() {
   );
 
   const start = useCallback(
-    async (params: { files: File[]; sourceName?: string; sourceType?: string; dialect?: Region }): Promise<string> => {
+    async (params: { files: File[]; sourceName?: string; sourceType?: string; dialect?: string }): Promise<string> => {
       safeSetError(null);
       try {
         const { run_id } = await startPipelineRun(params);

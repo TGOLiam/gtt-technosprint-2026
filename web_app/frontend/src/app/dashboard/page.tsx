@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePipelinePolling } from "@/lib/use-pipeline-polling";
-import { Region } from "@/lib/types";
 import {
   Upload,
   Download,
@@ -21,9 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getPipelineDownloadUrl } from "@/lib/api";
 
-const REGIONS: Region[] = ["naga", "albay"];
-
-function cliOutput(run: any): string {
+function cliOutput(run: any, elapsed: number): string {
   const sep = "─".repeat(72);
   const header = "Bikol Speech Pipeline";
   const input = `  input   (${run.files.length} file${run.files.length !== 1 ? 's' : ''})`;
@@ -50,9 +47,9 @@ function cliOutput(run: any): string {
   summary += `  dialect      ${run.summary.dialect}\n`;
 
   const footer = run.status === "done"
-    ? `✓ Pipeline complete  ${run.summary.run_time_s}s  →  data/output/${run.run_id}/`
+    ? `✓ Pipeline complete  ${elapsed}s  →  data/output/${run.run_id}/`
     : run.status === "running"
-    ? `Running...  ${run.summary.run_time_s}s`
+    ? `Running...  ${elapsed}s`
     : `Pipeline ${run.status}`;
 
   return `${header}\n${sep}\n${input}\n${output}\n${sep}\n${fileRows}\n${sep}\n${summary.trim()}\n${sep}\n${footer}`;
@@ -76,10 +73,21 @@ export default function DashboardPage() {
 
   const [sourceName, setSourceName] = useState("");
   const [sourceType, setSourceType] = useState("");
-  const [dialect, setDialect] = useState<Region>("albay");
+  const [dialect, setDialect] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Client-side running timer
+  useEffect(() => {
+    if (run?.status === "running" || run?.status === "queued") {
+      const interval = setInterval(() => setElapsed(prev => prev + 1), 1000);
+      return () => clearInterval(interval);
+    } else if (run && run.summary.run_time_s > 0) {
+      setElapsed(Math.round(run.summary.run_time_s));
+    }
+  }, [run?.status]);
 
   // Resume from sessionStorage first (survives page navigation),
   // then fall back to URL query param (for links / bookmarks).
@@ -109,6 +117,7 @@ export default function DashboardPage() {
   async function handleStart() {
     if (selectedFiles.length === 0) return;
     hasResumed.current = true;
+    setElapsed(0);
     const runId = await start({ files: selectedFiles, sourceName, sourceType, dialect });
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
@@ -183,24 +192,13 @@ export default function DashboardPage() {
                     <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                       Label Dialect
                     </label>
-                    <div className="mt-1 flex gap-2">
-                      {REGIONS.map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          disabled={isRunning}
-                          onClick={() => setDialect(r)}
-                          className={cn(
-                            "flex-1 rounded-lg border-2 px-3 py-1.5 text-sm font-medium capitalize transition-colors disabled:opacity-50",
-                            dialect === r
-                              ? "border-maroon bg-maroon/5 text-maroon"
-                              : "border-ink/10 bg-white text-ink-soft"
-                          )}
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
+                    <input
+                      value={dialect}
+                      onChange={(e) => setDialect(e.target.value)}
+                      placeholder="e.g. naga, albay, rinconada"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
                   </div>
                 </div>
 
@@ -460,7 +458,7 @@ export default function DashboardPage() {
               <Card>
                 <h2 className="font-display text-sm font-bold text-ink">Output</h2>
                 <pre className="mt-3 max-h-96 overflow-y-auto rounded-xl bg-ink/95 p-4 text-xs leading-relaxed text-marigold/90">
-{run ? cliOutput(run) : "Waiting for a file to process…"}
+{run ? cliOutput(run, elapsed) : "Waiting for a file to process…"}
                 </pre>
               </Card>
 
