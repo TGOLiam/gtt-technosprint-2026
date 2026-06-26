@@ -14,25 +14,19 @@ python tinigbicol.py serve                                # start the dashboard
 ## How It Works
 web_app/backend/data/input/       ← raw audio from app + manifest.yml
 
-│
-
-▼
+↓
 
 Stage 1 ─── NORMALIZE
 
 ffmpeg → 16kHz mono WAV. Any format accepted.
 
-│
-
-▼
+↓
 
 Stage 2 ─── SEGMENT
 
 Hard-cut into 10s chunks. Silent/unlabeled noise discarded.
 
-│
-
-▼
+↓
 
 Stage 3 ─── CLASSIFY
 
@@ -40,9 +34,7 @@ MMS-LID-256 predicts language. Philippine speech kept,
 
 non-PH speech rejected.
 
-│
-
-▼
+↓
 
 web_app/backend/data/audio/
 
@@ -236,3 +228,7 @@ Pipeline: python tinigbicol.py pipeline data/input/ data/audio/
 Bikol is a Philippine macrolanguage with multiple dialect varieties (Naga/Coastal, Albay/Inland, Rinconada, and others). Despite millions of speakers, no publicly available speech dataset labels these varieties. This pipeline produces the first open, reproducible tool for building Bikol dialect speech datasets from arbitrary audio sources.
 
 See `pipeline_architecture.md` for the full specification, including design decisions, edge cases, and model limitations.
+
+## AI Disclosure
+ChatGPT, Claude, and Meta AI (Facebook MMS-LID-2056) were used to assist in brainstorming, writing refinement, and content organization. All AI-generated outputs were reviewed, edited, and validated by the team, and all final content and decisions remain the responsibility of the authors.
+
