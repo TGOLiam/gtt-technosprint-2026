@@ -1,12 +1,14 @@
 import uuid
+import yaml
 from enum import Enum
 from contextlib import closing
+from pathlib import Path
 
 from fastapi import APIRouter, Form, UploadFile, Request
 from fastapi.responses import JSONResponse
 
 from app.db import get_db
-from app.services.audio import convert_to_wav, get_duration_ms, is_silent, save_upload
+from app.services.audio import save_upload
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -15,15 +17,49 @@ limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(tags=["record"])
 
+MANIFEST_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "input" / "manifest.yml"
+
 class Dialect(str, Enum):
     naga = "naga"
     albay = "albay"
 
 
+def update_manifest(audio_path: str, dialect_label: str, rec_id: str):
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    if MANIFEST_PATH.exists():
+        with open(MANIFEST_PATH, "r") as f:
+            manifest = yaml.safe_load(f) or {}
+    else:
+        manifest = {
+            "defaults": {
+                "confidence": "high",
+                "segment": {
+                    "max_duration_s": 10,
+                    "min_duration_s": 1
+                }
+            },
+            "files": []
+        }
+
+    if "files" not in manifest or manifest["files"] is None:
+        manifest["files"] = []
+
+    manifest["files"].append({
+        "path": Path(audio_path).name,  # just the filename, not full path
+        "dialect_label": dialect_label,
+        "source_name": rec_id,
+        "source_type": "app_recording"
+    })
+
+    with open(MANIFEST_PATH, "w") as f:
+        yaml.dump(manifest, f, default_flow_style=False, allow_unicode=True)
+
+
 @router.post("/api/record")
 @limiter.limit("10/minute")
 async def record(
-    request: Request, 
+    request: Request,
     audio: UploadFile,
     prompt_id: str = Form(""),
     speaker_id: str = Form(""),
@@ -34,22 +70,11 @@ async def record(
     license_choice: str = Form("cc0"),
     consent_granted: bool = Form(False),
 ):
-
     audio_bytes = await audio.read()
     original_format = audio.content_type or ""
-    rec_id, raw_path = save_upload(audio_bytes, original_format)
-    wav_path = convert_to_wav(raw_path, rec_id)
+    rec_id, audio_path = save_upload(audio_bytes, original_format)
 
-    if wav_path is None:
-        return JSONResponse({"error": "audio conversion failed"}, 500)
-
-    duration_ms = get_duration_ms(wav_path)
-
-    if duration_ms < 500:
-        return JSONResponse({"error": "recording too short", "duration_ms": duration_ms}, 400)
-
-    if is_silent(wav_path):
-        return JSONResponse({"error": "recording is silent"}, 400)
+    update_manifest(audio_path, dialect_label.value, rec_id)
 
     with closing(get_db()) as db:
         if speaker_id:
@@ -68,7 +93,7 @@ async def record(
 
         db.execute(
             "INSERT INTO recordings VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
-            (rec_id, speaker_id, prompt_id or None, wav_path, original_format, duration_ms),
+            (rec_id, speaker_id, prompt_id or None, audio_path, original_format, 0),
         )
 
         if prompt_id:
@@ -82,7 +107,6 @@ async def record(
     return {
         "recording_id": rec_id,
         "speaker_id": speaker_id,
-        "duration_ms": duration_ms,
         "naga_total": naga,
         "albay_total": albay,
     }
