@@ -1,4 +1,4 @@
-.PHONY: install dev dev-backend dev-frontend test build clean
+.PHONY: install dev test build clean
 
 FRONTEND_DIR=web_app/frontend
 BACKEND_DIR=web_app/backend
@@ -6,12 +6,6 @@ BACKEND_DIR=web_app/backend
 install:
 	cd $(FRONTEND_DIR) && npm install
 	cd $(BACKEND_DIR) && pip install -r requirements.txt
-
-dev-backend:
-	cd $(BACKEND_DIR) && python -m uvicorn app.main:app --reload --port 8000
-
-dev-frontend:
-	cd $(FRONTEND_DIR) && npm run dev
 
 ifeq ($(OS),Windows_NT)
 dev:
@@ -24,9 +18,7 @@ clean:
 	@for /d /r "$(BACKEND_DIR)" %i in (__pycache__) do @if exist "%i" rmdir /s /q "%i" 2>nul
 else
 dev:
-	trap 'kill 0' EXIT; \
-		$(MAKE) dev-backend & \
-		$(MAKE) dev-frontend
+	python tinigbicol.py serve
 
 clean:
 	$(RM) -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/.next

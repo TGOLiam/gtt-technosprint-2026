@@ -2,4 +2,4 @@
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
-python3 -m pipeline.run "$@"
+python3 tinigbicol.py pipeline "$@"
