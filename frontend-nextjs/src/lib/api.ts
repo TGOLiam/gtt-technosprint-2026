@@ -14,12 +14,14 @@
 import {
   MOCK_DASHBOARD_STATS,
   MOCK_LEADERBOARD,
+  MOCK_PIPELINE_RUN,
   MOCK_RECORDINGS,
   MOCK_SENTENCES,
 } from "./mock-data";
 import {
   DashboardStats,
   LeaderboardEntry,
+  PipelineRun,
   Recording,
   Region,
   SentenceItem,
@@ -114,4 +116,83 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 // GET /dataset/export -> triggers file download of the dataset (CSV/JSON/zip)
 export function getExportUrl(): string {
   return `${API_URL}/dataset/export`;
+}
+
+// ---------------------------------------------------------------------------
+// PIPELINE (the GUI front-end for the "Bikol Speech Preprocessing Pipeline"
+// CLI tool, normally run via `run.bat <input_dir> <output_dir>`).
+//
+// Backend contract assumed:
+//   POST /pipeline/run   multipart: file, source_name?, source_type?, dialect?
+//     -> { run_id, status: "queued" }
+//   GET  /pipeline/run/{run_id}
+//     -> PipelineRun  (poll this every ~1.5s while status is queued/running)
+//
+// This should call the SAME underlying pipeline code the CLI uses, so a
+// file run through the GUI produces an identical manifest.csv / rejected.csv
+// / pipeline.log as running run.bat directly.
+// ---------------------------------------------------------------------------
+
+let mockRunStep = 0;
+
+// POST /pipeline/run
+export async function startPipelineRun(params: {
+  file: File;
+  sourceName?: string;
+  sourceType?: string;
+  dialect?: Region;
+}): Promise<{ run_id: string }> {
+  if (USE_MOCK) {
+    await sleep(400);
+    mockRunStep = 0;
+    return { run_id: "run-demo-1" };
+  }
+  const form = new FormData();
+  form.append("file", params.file);
+  if (params.sourceName) form.append("source_name", params.sourceName);
+  if (params.sourceType) form.append("source_type", params.sourceType);
+  if (params.dialect) form.append("dialect", params.dialect);
+
+  const res = await fetch(`${API_URL}/pipeline/run`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error("Failed to start pipeline run");
+  return res.json();
+}
+
+// GET /pipeline/run/{run_id} — poll this on an interval until status is
+// "done" or "failed". The mock implementation advances one stage per call
+// so polling visibly progresses through normalize -> segment -> classify.
+export async function getPipelineRun(runId: string): Promise<PipelineRun> {
+  if (USE_MOCK) {
+    await sleep(500);
+    mockRunStep = Math.min(mockRunStep + 1, 4);
+
+    const stages = MOCK_PIPELINE_RUN.file.stages.map((s, i) => ({
+      ...s,
+      status:
+        mockRunStep > i ? ("done" as const) : i === mockRunStep ? ("running" as const) : ("pending" as const),
+    }));
+
+    const isDone = mockRunStep >= 4;
+
+    return {
+      ...MOCK_PIPELINE_RUN,
+      run_id: runId,
+      status: isDone ? "done" : "running",
+      file: {
+        ...MOCK_PIPELINE_RUN.file,
+        stages,
+        segments: isDone ? MOCK_PIPELINE_RUN.file.segments : [],
+        result: isDone ? "done" : "running",
+      },
+      output_log: isDone
+        ? MOCK_PIPELINE_RUN.output_log
+        : MOCK_PIPELINE_RUN.output_log.slice(0, 4 + mockRunStep * 2),
+    };
+  }
+  const res = await fetch(`${API_URL}/pipeline/run/${runId}`);
+  if (!res.ok) throw new Error("Failed to fetch pipeline run status");
+  return res.json();
 }

@@ -7,7 +7,6 @@ import { Mic } from "lucide-react";
 
 const links = [
   { href: "/record", label: "Record" },
-  { href: "/dataset", label: "Dataset" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/about", label: "About" },
 ];

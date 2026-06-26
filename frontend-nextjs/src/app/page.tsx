@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { LoadingScreen } from "@/components/loading-screen";
 import { Button } from "@/components/ui/button";
-import { Mic, Database, Info, ArrowRight } from "lucide-react";
+import { Mic, LayoutDashboard, Info, ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -39,9 +39,9 @@ export default function HomePage() {
                 <Mic size={20} /> Start Contributing
               </Button>
             </Link>
-            <Link href="/dataset">
+            <Link href="/dashboard">
               <Button size="lg" variant="secondary">
-                <Database size={20} /> View Dataset
+                <LayoutDashboard size={20} /> Dashboard
               </Button>
             </Link>
             <Link href="/about">
