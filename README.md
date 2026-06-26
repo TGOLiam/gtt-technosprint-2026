@@ -173,25 +173,6 @@ make dev
 | `POST /api/record` | Submit audio (multipart, rate limited: 10/min) |
 | `GET /api/stats` | Dashboard statistics |
 
-### Data Flow
-User records audio (browser)
-
-↓
-
-POST /api/record
-
-↓
-
-Raw audio saved to data/input/{rec_id}.webm
-
-↓
-
-Entry auto-appended to data/input/manifest.yml
-
-↓
-
-Pipeline: python tinigbicol.py pipeline data/input/ data/audio/
-
 ---
 
 ## Background
