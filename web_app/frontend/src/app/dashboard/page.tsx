@@ -118,9 +118,6 @@ export default function DashboardPage() {
     if (selectedFiles.length === 0) return;
     hasResumed.current = true;
     setElapsed(0);
-    setSourceName("");
-    setSourceType("");
-    setDialect("");
     const runId = await start({ files: selectedFiles, sourceName, sourceType, dialect });
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
