@@ -217,6 +217,16 @@ Bikol is a Philippine macrolanguage with multiple dialect varieties (Naga/Coasta
 
 See `pipeline_architecture.md` for the full specification, including design decisions, edge cases, and model limitations.
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Pipeline | Python 3.11+, PyTorch, HuggingFace Transformers, FFmpeg, Librosa |
+| ML Model | Facebook MMS-LID-256 |
+| Backend | FastAPI, Uvicorn, SQLite |
+| Frontend | Next.js 16, React 19, Tailwind CSS 4 |
+| Notebook | Google Colab (GPU-accelerated inference) |
+
 ## AI Disclosure
 ChatGPT, Claude, and Meta AI (Facebook MMS-LID-2056) were used to assist in brainstorming, writing refinement, and content organization. All AI-generated outputs were reviewed, edited, and validated by the team, and all final content and decisions remain the responsibility of the authors.
 
