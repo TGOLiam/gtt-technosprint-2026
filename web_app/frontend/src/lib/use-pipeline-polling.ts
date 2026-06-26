@@ -77,7 +77,6 @@ export function usePipelinePolling() {
   const start = useCallback(
     async (params: { files: File[]; sourceName?: string; sourceType?: string; dialect?: Region }): Promise<string> => {
       safeSetError(null);
-      safeSetRun(null);
       try {
         const { run_id } = await startPipelineRun(params);
         saveToSession(run_id, String(params.files.length));
