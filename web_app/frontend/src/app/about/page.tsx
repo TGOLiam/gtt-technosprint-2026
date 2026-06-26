@@ -58,6 +58,7 @@ export default function AboutPage() {
                 "TypeScript",
                 "Python",
                 "FFmpeg",
+                "MMS-LID-256",
                 
               ].map((tech) => (
                 <span
