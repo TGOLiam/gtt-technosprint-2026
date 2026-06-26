@@ -5,11 +5,48 @@ import { getPipelineRun, startPipelineRun } from "@/lib/api";
 import { PipelineRun, Region } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 1500;
+const SESSION_KEY = "active_pipeline_run";
+
+function saveToSession(runId: string, fileName: string) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ runId, fileName }));
+  } catch {}
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
+function loadFromSession(): { runId: string; fileName: string } | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 export function usePipelinePolling() {
   const [run, setRun] = useState<PipelineRun | null>(null);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const safeSetRun = useCallback((r: PipelineRun | null) => {
+    if (mountedRef.current) setRun(r);
+  }, []);
+
+  const safeSetError = useCallback((e: string | null) => {
+    if (mountedRef.current) setError(e);
+  }, []);
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -22,57 +59,72 @@ export function usePipelinePolling() {
     async (runId: string) => {
       try {
         const result = await getPipelineRun(runId);
-        setRun(result);
+        safeSetRun(result);
         if (result.status === "done" || result.status === "failed") {
           stopPolling();
+          clearSession();
         }
+        return result;
       } catch {
-        setError("Lost connection to the pipeline while checking status.");
+        safeSetError("Lost connection to the pipeline while checking status.");
         stopPolling();
+        return null;
       }
     },
-    [stopPolling]
+    [stopPolling, safeSetRun, safeSetError]
   );
 
   const start = useCallback(
     async (params: { file: File; sourceName?: string; sourceType?: string; dialect?: Region }): Promise<string> => {
-      setError(null);
-      setRun(null);
+      safeSetError(null);
+      safeSetRun(null);
       try {
         const { run_id } = await startPipelineRun(params);
+        saveToSession(run_id, params.file.name);
         await poll(run_id);
         intervalRef.current = setInterval(() => poll(run_id), POLL_INTERVAL_MS);
         return run_id;
       } catch {
-        setError("Could not start the pipeline. Check the backend connection.");
+        safeSetError("Could not start the pipeline. Check the backend connection.");
         return "";
       }
     },
-    [poll]
+    [poll, safeSetRun, safeSetError]
   );
 
   const resume = useCallback(
     async (runId: string) => {
-      setError(null);
-      setRun(null);
+      safeSetError(null);
       stopPolling();
       try {
-        await poll(runId);
-        intervalRef.current = setInterval(() => poll(runId), POLL_INTERVAL_MS);
+        const result = await poll(runId);
+        if (result && (result.status === "running" || result.status === "queued")) {
+          intervalRef.current = setInterval(() => poll(runId), POLL_INTERVAL_MS);
+        }
       } catch {
-        setError("Could not restore pipeline session.");
+        safeSetError("Could not restore pipeline session.");
       }
     },
-    [poll, stopPolling]
+    [poll, stopPolling, safeSetError]
   );
+
+  const resumeFromSession = useCallback((): string | null => {
+    const session = loadFromSession();
+    if (session) {
+      resume(session.runId);
+      return session.runId;
+    }
+    return null;
+  }, [resume]);
 
   const reset = useCallback(() => {
     stopPolling();
-    setRun(null);
-    setError(null);
-  }, [stopPolling]);
+    safeSetRun(null);
+    safeSetError(null);
+    clearSession();
+  }, [stopPolling, safeSetRun, safeSetError]);
 
   useEffect(() => stopPolling, [stopPolling]);
 
-  return { run, error, start, resume, reset, isRunning: run?.status === "running" || run?.status === "queued" };
+  return { run, error, start, resume, resumeFromSession, reset, isRunning: run?.status === "running" || run?.status === "queued" };
 }

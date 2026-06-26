@@ -31,7 +31,7 @@ function StageIcon({ status }: { status: string }) {
 }
 
 export default function DashboardPage() {
-  const { run, error, start, resume, reset, isRunning } = usePipelinePolling();
+  const { run, error, start, resume, resumeFromSession, reset, isRunning } = usePipelinePolling();
   const router = useRouter();
   const searchParams = useSearchParams();
   const runIdFromUrl = searchParams.get("run_id");
@@ -44,18 +44,17 @@ export default function DashboardPage() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Resume from sessionStorage first (survives page navigation),
+  // then fall back to URL query param (for links / bookmarks).
   useEffect(() => {
-    if (runIdFromUrl && !hasResumed.current) {
-      hasResumed.current = true;
+    if (hasResumed.current) return;
+    hasResumed.current = true;
+
+    const fromSession = resumeFromSession();
+    if (!fromSession && runIdFromUrl) {
       resume(runIdFromUrl);
     }
-  }, [runIdFromUrl, resume]);
-
-  useEffect(() => {
-    if (run?.status === "done" || run?.status === "failed") {
-      router.replace("/dashboard");
-    }
-  }, [run?.status, router]);
+  }, [runIdFromUrl, resume, resumeFromSession]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
