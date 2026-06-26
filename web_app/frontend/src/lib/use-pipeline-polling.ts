@@ -35,18 +35,35 @@ export function usePipelinePolling() {
   );
 
   const start = useCallback(
-    async (params: { file: File; sourceName?: string; sourceType?: string; dialect?: Region }) => {
+    async (params: { file: File; sourceName?: string; sourceType?: string; dialect?: Region }): Promise<string> => {
       setError(null);
       setRun(null);
       try {
         const { run_id } = await startPipelineRun(params);
         await poll(run_id);
         intervalRef.current = setInterval(() => poll(run_id), POLL_INTERVAL_MS);
+        return run_id;
       } catch {
         setError("Could not start the pipeline. Check the backend connection.");
+        return "";
       }
     },
     [poll]
+  );
+
+  const resume = useCallback(
+    async (runId: string) => {
+      setError(null);
+      setRun(null);
+      stopPolling();
+      try {
+        await poll(runId);
+        intervalRef.current = setInterval(() => poll(runId), POLL_INTERVAL_MS);
+      } catch {
+        setError("Could not restore pipeline session.");
+      }
+    },
+    [poll, stopPolling]
   );
 
   const reset = useCallback(() => {
@@ -57,5 +74,5 @@ export function usePipelinePolling() {
 
   useEffect(() => stopPolling, [stopPolling]);
 
-  return { run, error, start, reset, isRunning: run?.status === "running" || run?.status === "queued" };
+  return { run, error, start, resume, reset, isRunning: run?.status === "running" || run?.status === "queued" };
 }

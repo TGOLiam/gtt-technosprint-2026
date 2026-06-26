@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { NavBar } from "@/components/nav-bar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,11 @@ function StageIcon({ status }: { status: string }) {
 }
 
 export default function DashboardPage() {
-  const { run, error, start, isRunning } = usePipelinePolling();
+  const { run, error, start, resume, reset, isRunning } = usePipelinePolling();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const runIdFromUrl = searchParams.get("run_id");
+  const hasResumed = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [sourceName, setSourceName] = useState("");
@@ -36,11 +41,28 @@ export default function DashboardPage() {
   const [dialect, setDialect] = useState<Region>("albay");
   const [fileName, setFileName] = useState<string | null>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (runIdFromUrl && !hasResumed.current) {
+      hasResumed.current = true;
+      resume(runIdFromUrl);
+    }
+  }, [runIdFromUrl, resume]);
+
+  useEffect(() => {
+    if (run?.status === "done" || run?.status === "failed") {
+      router.replace("/dashboard");
+    }
+  }, [run?.status, router]);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
-    start({ file, sourceName, sourceType, dialect });
+    hasResumed.current = true;
+    const runId = await start({ file, sourceName, sourceType, dialect });
+    if (runId) {
+      router.push(`/dashboard?run_id=${runId}`);
+    }
   }
 
   return (
