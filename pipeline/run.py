@@ -49,7 +49,7 @@ def _duration_str(ms: int) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Bikol Speech Preprocessing Pipeline")
+    parser = argparse.ArgumentParser(prog="tinigbicol pipeline", description="Bikol Speech Preprocessing Pipeline")
     parser.add_argument("input_dir", type=Path, help="Directory with manifest.yml + media files")
     parser.add_argument("output_dir", type=Path, help="Directory to write output")
     parser.add_argument("--skip-classify", action="store_true", help="Skip Stage 3 (language classification)")
