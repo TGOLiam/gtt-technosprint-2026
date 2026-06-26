@@ -14,6 +14,10 @@ dev-frontend:
 	cd $(FRONTEND_DIR) && npm run dev
 
 dev:
+ifeq ($(OS),Windows_NT)
+	start /b cmd /c "cd $(BACKEND_DIR) && uvicorn app.main:app --reload --port 8000"
+	start /b cmd /c "cd $(FRONTEND_DIR) && npm run dev"
+else
 	trap 'kill 0' EXIT; \
 		$(MAKE) dev-backend & \
 		$(MAKE) dev-frontend
