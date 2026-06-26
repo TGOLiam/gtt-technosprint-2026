@@ -32,5 +32,5 @@ ifeq ($(OS),Windows_NT)
 clean:
 	@if exist "$(FRONTEND_DIR)\node_modules" rmdir /s /q "$(FRONTEND_DIR)\node_modules"
 	@if exist "$(FRONTEND_DIR)\.next" rmdir /s /q "$(FRONTEND_DIR)\.next"
-	@for /d /r "$(BACKEND_DIR)" %%i in (__pycache__) do @if exist "%%i" rmdir /s /q "%%i" 2>nul
+	@for /d /r "$(BACKEND_DIR)" %i in (__pycache__) do @if exist "%i" rmdir /s /q "%i" 2>nul
 endif
