@@ -1,4 +1,4 @@
-markdown# TinigBicol — Bikol Speech Preprocessing Pipeline
+# TinigBicol — Bikol Speech Preprocessing Pipeline
 
 Despite being spoken by millions across the Bicol Region, Bikol remains almost entirely absent from open speech technology. No public dataset exists. No benchmark. No baseline. Every Filipino voice deserves to be heard — and that starts with building the infrastructure to capture it.
 
