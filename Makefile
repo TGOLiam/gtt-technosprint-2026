@@ -1,7 +1,4 @@
-SHELL := cmd.exe
-.SHELLFLAGS := /C
-
-.PHONY: install dev test build clean
+.PHONY: install dev dev-backend dev-frontend test build clean
 
 FRONTEND_DIR=web_app\frontend
 BACKEND_DIR=web_app\backend
@@ -10,11 +7,16 @@ install:
 	cd $(FRONTEND_DIR) && npm install
 	cd $(BACKEND_DIR) && pip install -r requirements.txt
 
-dev:
-	start "Backend" cmd /K "cd $(BACKEND_DIR) && python -m uvicorn app.main:app --reload --port 8000"
-	timeout /t 2 >nul
-	start "" http://localhost:3000
+dev-backend:
+	cd $(BACKEND_DIR) && uvicorn app.main:app --reload --port 8000
+
+dev-frontend:
 	cd $(FRONTEND_DIR) && npm run dev
+
+dev:
+	trap 'kill 0' EXIT; \
+		$(MAKE) dev-backend & \
+		$(MAKE) dev-frontend
 
 test:
 	cd $(BACKEND_DIR) && python -m pytest -xvs
