@@ -60,9 +60,14 @@ export default function DashboardPage() {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    setSelectedFiles(Array.from(files));
-    setFileNames(Array.from(files).map(f => f.name));
+    const incoming = Array.from(files);
+    const existingNames = new Set(selectedFiles.map(f => f.name));
+    const newFiles = incoming.filter(f => !existingNames.has(f.name));
+    if (newFiles.length === 0) return;
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    setFileNames(prev => [...prev, ...newFiles.map(f => f.name)]);
     setSubmitted(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleStart() {
@@ -110,7 +115,7 @@ export default function DashboardPage() {
                   className="w-full"
                   size="sm"
                 >
-                  <Upload size={16} /> Upload audio files
+                  <Upload size={16} /> {fileNames.length > 0 ? "Add more files" : "Upload audio files"}
                 </Button>
 
                 <div className="mt-5 space-y-3">
@@ -175,8 +180,19 @@ export default function DashboardPage() {
                           <dd className="truncate font-medium text-ink">{fileNames.length} file{fileNames.length !== 1 ? 's' : ''}</dd>
                         </div>
                         {fileNames.map((name, i) => (
-                          <div key={i} className="flex justify-between gap-2 pl-2">
+                          <div key={i} className="flex items-center justify-between gap-2 pl-2">
                             <dt className="truncate text-ink-soft">{name}</dt>
+                            {!submitted && !isRunning && (
+                              <button
+                                onClick={() => {
+                                  setSelectedFiles(prev => prev.filter((_, idx) => idx !== i));
+                                  setFileNames(prev => prev.filter((_, idx) => idx !== i));
+                                }}
+                                className="text-xs text-maroon hover:underline"
+                              >
+                                remove
+                              </button>
+                            )}
                           </div>
                         ))}
                         <div className="flex justify-between gap-2">
