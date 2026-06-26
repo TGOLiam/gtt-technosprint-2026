@@ -12,7 +12,7 @@ export default function AboutPage() {
             About TinigBicol
           </h1>
           <p className="mt-1 text-ink-soft">
-            An open language depository for all — starting with Bikol.
+            An open language depository for all — starting with Bicol.
           </p>
 
           <Card className="mt-8">
