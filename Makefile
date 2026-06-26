@@ -19,11 +19,18 @@ dev:
 		$(MAKE) dev-frontend
 
 test:
-	cd $(BACKEND_DIR) && pytest -xvs
+	cd $(BACKEND_DIR) && python -m pytest -xvs
 
 build:
 	cd $(FRONTEND_DIR) && npm run build
 
 clean:
-	rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/.next
+	$(RM) -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/.next
 	find $(BACKEND_DIR) -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+ifeq ($(OS),Windows_NT)
+clean:
+	@if exist "$(FRONTEND_DIR)\node_modules" rmdir /s /q "$(FRONTEND_DIR)\node_modules"
+	@if exist "$(FRONTEND_DIR)\.next" rmdir /s /q "$(FRONTEND_DIR)\.next"
+	@for /d /r "$(BACKEND_DIR)" %%i in (__pycache__) do @if exist "%%i" rmdir /s /q "%%i" 2>nul
+endif
