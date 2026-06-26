@@ -14,6 +14,7 @@ web_app/backend/data/
 pipeline/models/
 pipeline/test_data/*.mp3
 .playwright-mcp/
+/dev.sh
 /test_output/
 
 # testing/ — keep config files, ignore audio and data
@@ -25,3 +26,4 @@ testing/test_input/*.mp4
 testing/test_input/*.wav
 testing/test_input/*.m4a
 testing/test_input/*.webm
+frontend/

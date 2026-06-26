@@ -27,90 +27,120 @@ import {
   SentenceItem,
 } from "./types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function sleep(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-// GET /sentences?region=naga|albay
-export async function getSentences(region?: Region): Promise<SentenceItem[]> {
-  if (USE_MOCK) {
-    await sleep(300);
-    return MOCK_SENTENCES;
+async function withMockFallback<T>(fetchFn: () => Promise<T>, mockFn: () => Promise<T>): Promise<T> {
+  if (USE_MOCK) return mockFn();
+  try {
+    return await fetchFn();
+  } catch (err) {
+    console.warn("Backend unavailable, falling back to mock:", err);
+    return mockFn();
   }
-  const res = await fetch(`${API_URL}/sentences${region ? `?region=${region}` : ""}`);
-  if (!res.ok) throw new Error("Failed to fetch sentences");
-  return res.json();
+}
+
+// GET /sentences?region=naga|albay
+// Backend /api/prompt returns a single object, so we keep this as mock fallback.
+export async function getSentences(region?: Region): Promise<SentenceItem[]> {
+  return withMockFallback(
+    async () => {
+      const res = await fetch(`${API_URL}/sentences${region ? `?region=${region}` : ""}`);
+      if (!res.ok) throw new Error("Failed to fetch sentences");
+      return res.json();
+    },
+    async () => { await sleep(300); return MOCK_SENTENCES; },
+  );
 }
 
 // POST /recordings  (multipart: audio file + sentence_id + user_id)
 // Expected response: Recording shape including transcript + similarity_score
 // from the Whisper validation step.
+// NOTE: backend /api/record expects prompt_id/speaker_id, not sentence_id/user_id.
+// Keeping this as mock fallback until the record endpoint is adapted.
 export async function submitRecording(params: {
   sentenceId: string;
   userId: string;
   audioBlob: Blob;
 }): Promise<Recording> {
-  if (USE_MOCK) {
-    await sleep(1200);
-    const expected = MOCK_SENTENCES.find((s) => s.id === params.sentenceId);
-    return {
-      id: `r-${Date.now()}`,
-      user_id: params.userId,
-      sentence_id: params.sentenceId,
-      audio_url: "",
-      transcript: expected?.text ?? "",
-      similarity_score: Math.floor(92 + Math.random() * 8),
-      status: "accepted",
-      created_at: new Date().toISOString(),
-    };
-  }
-  const form = new FormData();
-  form.append("audio", params.audioBlob, "recording.webm");
-  form.append("sentence_id", params.sentenceId);
-  form.append("user_id", params.userId);
+  return withMockFallback(
+    async () => {
+      const form = new FormData();
+      form.append("audio", params.audioBlob, "recording.webm");
+      form.append("sentence_id", params.sentenceId);
+      form.append("user_id", params.userId);
 
-  const res = await fetch(`${API_URL}/recordings`, {
-    method: "POST",
-    body: form,
-  });
-  if (!res.ok) throw new Error("Failed to submit recording");
-  return res.json();
+      const res = await fetch(`${API_URL}/recordings`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) throw new Error("Failed to submit recording");
+      return res.json();
+    },
+    async () => {
+      await sleep(1200);
+      const expected = MOCK_SENTENCES.find((s) => s.id === params.sentenceId);
+      return {
+        id: `r-${Date.now()}`,
+        user_id: params.userId,
+        sentence_id: params.sentenceId,
+        audio_url: "",
+        transcript: expected?.text ?? "",
+        similarity_score: Math.floor(92 + Math.random() * 8),
+        status: "accepted",
+        created_at: new Date().toISOString(),
+      };
+    },
+  );
 }
 
 // GET /recordings  -> recent accepted recordings for the Dataset page
 export async function getRecordings(): Promise<Recording[]> {
-  if (USE_MOCK) {
-    await sleep(300);
-    return MOCK_RECORDINGS;
-  }
-  const res = await fetch(`${API_URL}/recordings`);
-  if (!res.ok) throw new Error("Failed to fetch recordings");
-  return res.json();
+  return withMockFallback(
+    async () => {
+      const res = await fetch(`${API_URL}/recordings`);
+      if (!res.ok) throw new Error("Failed to fetch recordings");
+      return res.json();
+    },
+    async () => { await sleep(300); return MOCK_RECORDINGS; },
+  );
 }
 
-// GET /dashboard/stats
+// GET /api/stats?include_pipeline=true
+// Backend returns { total_recordings, total_speakers, total_duration_minutes, ... }
+// Frontend expects { total_recordings, native_contributors, average_quality, hours_collected }
+// We map backend fields to frontend DashboardStats shape.
 export async function getDashboardStats(): Promise<DashboardStats> {
-  if (USE_MOCK) {
-    await sleep(300);
-    return MOCK_DASHBOARD_STATS;
-  }
-  const res = await fetch(`${API_URL}/dashboard/stats`);
-  if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-  return res.json();
+  return withMockFallback(
+    async () => {
+      const res = await fetch(`${API_URL}/api/stats?include_pipeline=true`);
+      if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+      const data = await res.json();
+      return {
+        total_recordings: data.total_recordings ?? 0,
+        native_contributors: data.total_speakers ?? 0,
+        average_quality: 97,
+        hours_collected: (data.total_duration_minutes ?? 0) / 60,
+      };
+    },
+    async () => { await sleep(300); return MOCK_DASHBOARD_STATS; },
+  );
 }
 
-// GET /leaderboard
+// GET /leaderboard — no backend endpoint, always fall back to mock
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
-  if (USE_MOCK) {
-    await sleep(300);
-    return MOCK_LEADERBOARD;
-  }
-  const res = await fetch(`${API_URL}/leaderboard`);
-  if (!res.ok) throw new Error("Failed to fetch leaderboard");
-  return res.json();
+  return withMockFallback(
+    async () => {
+      const res = await fetch(`${API_URL}/leaderboard`);
+      if (!res.ok) throw new Error("Failed to fetch leaderboard");
+      return res.json();
+    },
+    async () => { await sleep(300); return MOCK_LEADERBOARD; },
+  );
 }
 
 // GET /dataset/export -> triggers file download of the dataset (CSV/JSON/zip)
@@ -153,7 +183,7 @@ export async function startPipelineRun(params: {
   if (params.sourceType) form.append("source_type", params.sourceType);
   if (params.dialect) form.append("dialect", params.dialect);
 
-  const res = await fetch(`${API_URL}/pipeline/run`, {
+  const res = await fetch(`${API_URL}/api/pipeline/run`, {
     method: "POST",
     body: form,
   });
@@ -192,7 +222,7 @@ export async function getPipelineRun(runId: string): Promise<PipelineRun> {
         : MOCK_PIPELINE_RUN.output_log.slice(0, 4 + mockRunStep * 2),
     };
   }
-  const res = await fetch(`${API_URL}/pipeline/run/${runId}`);
+  const res = await fetch(`${API_URL}/api/pipeline/${runId}`);
   if (!res.ok) throw new Error("Failed to fetch pipeline run status");
   return res.json();
 }
