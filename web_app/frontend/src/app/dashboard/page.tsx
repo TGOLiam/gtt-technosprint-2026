@@ -129,6 +129,18 @@ export default function DashboardPage() {
     setSubmitted(true);
   }
 
+  function handleClear() {
+    setSelectedFiles([]);
+    setFileNames([]);
+    setSubmitted(false);
+    setElapsed(0);
+    setSourceName("");
+    setSourceType("");
+    setDialect("");
+    reset();
+    router.replace("/dashboard");
+  }
+
   return (
     <>
       <NavBar />
@@ -253,9 +265,18 @@ export default function DashboardPage() {
                         Submit
                       </Button>
                     ) : (
-                      <p className="mt-4 text-center text-sm font-medium text-leaf">
-                        ✓ Files ready
-                      </p>
+                      <div className="mt-4 space-y-2">
+                        <p className="text-center text-sm font-medium text-leaf">
+                          ✓ Files ready
+                        </p>
+                        <Button
+                          onClick={handleClear}
+                          size="sm"
+                          className="w-full"
+                        >
+                          Clear
+                        </Button>
+                      </div>
                     )}
                   </>
                 )}
@@ -328,7 +349,7 @@ export default function DashboardPage() {
                 </h2>
 
                 {!run ? (
-                  fileNames.length > 0 ? (
+                  submitted ? (
                     <>
                       <div className="mt-4 overflow-x-auto">
                         <table className="w-full text-left text-sm">
