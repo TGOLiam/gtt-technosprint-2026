@@ -1,3 +1,4 @@
+import shutil
 import uuid
 import yaml
 from enum import Enum
@@ -26,6 +27,8 @@ class Dialect(str, Enum):
 
 def update_manifest(audio_path: str, dialect_label: str, rec_id: str):
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    dest = MANIFEST_PATH.parent / Path(audio_path).name
+    shutil.copy2(audio_path, str(dest))
 
     if MANIFEST_PATH.exists():
         with open(MANIFEST_PATH, "r") as f:

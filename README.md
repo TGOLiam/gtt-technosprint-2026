@@ -1,44 +1,55 @@
 # TinigBicol — Bikol Speech Preprocessing Pipeline
 
-Despite being spoken by millions across the Bicol Region, Bikol remains 
-almost entirely absent from open speech technology. No public dataset exists. 
-No benchmark. No baseline. Every Filipino voice deserves to be heard — and 
-that starts with building the infrastructure to capture it.
+Despite being spoken by millions across the Bicol Region, Bikol remains almost entirely absent from open speech technology. No public dataset exists. No benchmark. No baseline. Every Filipino voice deserves to be heard — and that starts with building the infrastructure to capture it.
 
-TinigBicol transforms raw Bikol-language audio and video into structured, 
-annotated speech segments — ready for ASR research, dialect study, and 
-dataset construction. Drop a folder of audio files and a `manifest.yml` — 
-get standardized 16kHz WAV segments with language annotation and structured 
-metadata back.
+TinigBicol transforms raw Bikol-language audio and video into structured, annotated speech segments — ready for ASR research, dialect study, and dataset construction. Drop a folder of audio files and a `manifest.yml` — get standardized 16kHz WAV segments with language annotation and structured metadata back.
 
 ---
 
 ## How It Works
+web_app/backend/data/input/       ← raw audio from app + manifest.yml
 
-```
-testing/test_input/               ← your audio + manifest.yml
-     │
-     ▼
+│
+
+▼
+
 Stage 1 ─── NORMALIZE
-            ffmpeg → 16kHz mono WAV. Any format accepted.
-     │
-     ▼
+
+ffmpeg → 16kHz mono WAV. Any format accepted.
+
+│
+
+▼
+
 Stage 2 ─── SEGMENT
-            Hard-cut into 10s chunks. Silent/unlabeled noise discarded.
-     │
-     ▼
+
+Hard-cut into 10s chunks. Silent/unlabeled noise discarded.
+
+│
+
+▼
+
 Stage 3 ─── CLASSIFY
-            MMS-LID-256 predicts language. Philippine speech kept,
-            non-PH speech rejected.
-     │
-     ▼
-testing/test_output/
-├── audio/naga_00001.wav          ← kept segments
+
+MMS-LID-256 predicts language. Philippine speech kept,
+
+non-PH speech rejected.
+
+│
+
+▼
+
+web_app/backend/data/audio/
+
+├── naga_00001.wav                ← kept segments
+
 ├── rejected/eng_00015.wav        ← rejected segments
+
 ├── manifest.csv                  ← metadata: your label + model prediction
+
 ├── rejected.csv
+
 └── pipeline.log                  ← full provenance (JSONL)
-```
 
 Each segment in `manifest.csv` carries two signals:
 
@@ -48,9 +59,7 @@ Each segment in `manifest.csv` carries two signals:
 | `predicted_lang` | What MMS-LID heard (ISO code) |
 | `predicted_score` | How confident the model was (0–1) |
 
-The gate is a Philippine language filter — any PH code passes. Non-PH
-predictions (English, Japanese, noise) are rejected. The dual-signal
-output lets you decide whose signal to trust.
+The gate is a Philippine language filter — any PH code passes. Non-PH predictions (English, Japanese, noise) are rejected. The dual-signal output lets you decide whose signal to trust.
 
 ---
 
@@ -60,11 +69,11 @@ output lets you decide whose signal to trust.
 
 - Python 3.11+
 - ffmpeg
+- CUDA-Compatible GPU (Optional)
 
 ### 1. Use Your Own Audio
 
-Drop audio files into a directory (any format — mp3, mp4, wav, webm, etc.).
-Create a `manifest.yml` listing each file with its dialect label:
+Drop audio files into a directory (any format — mp3, mp4, wav, webm, etc.). Create a `manifest.yml` listing each file with its dialect label:
 
 ```yaml
 defaults:
@@ -83,14 +92,14 @@ See `testing/test_input/manifest.yml` for a full example with all options.
 
 ```bash
 # Install dependencies (one time)
-pip install -r pipeline/requirements.txt
+python -m pip install -r pipeline/requirements.txt
 
 # Run the full pipeline
-./run.sh my_audio/ my_output/
+./run.bat my_audio/ my_output/         # Windows
+./run.sh my_audio/ my_output/          # Mac/Linux
 ```
 
-First run downloads MMS-LID-256 (~3.9 GB, cached thereafter). GPU is
-auto-detected. On CPU, expect 5–15s per 10s segment.
+First run downloads MMS-LID-256 (~3.9 GB, cached thereafter). GPU is auto-detected. On CPU, expect 5–15s per 10s segment.
 
 ### 3. Run with Google Colab
 
@@ -98,7 +107,7 @@ If your machine lacks a GPU, offload Stage 3 to Colab's free T4:
 
 ```bash
 # Run stages 1–2 locally (fast, CPU-friendly)
-./run.sh my_audio/ my_output/ --skip-classify
+./run.bat my_audio/ my_output/ --skip-classify
 
 # Then:
 # 1. Zip the WAVs: zip -r audio.zip my_output/audio/
@@ -114,81 +123,129 @@ Colab processes ~100× faster than CPU and requires no local ML dependencies.
 Run only stages 1–2 (normalize + segment) without any language classification:
 
 ```bash
-./run.sh my_audio/ my_output/ --skip-classify
+./run.bat my_audio/ my_output/ --skip-classify
 ```
-
-Useful for quick format conversion and segmentation when you don't need
-language validation.
 
 ---
 
 ## Project Layout
-
-```
 ├── pipeline/              # The CLI tool
+
 │   ├── run.py             # Entry point
+
 │   ├── normalize.py       # Stage 1: ffmpeg
+
 │   ├── segment.py         # Stage 2: hard-cut
+
 │   ├── validate.py        # Stage 3: MMS-LID
+
 │   ├── manifest.py        # Parse manifest.yml
+
 │   ├── output.py          # Write CSVs + log
+
 │   ├── config.py          # Defaults
+
 │   └── requirements.txt
+
 │
+
 ├── testing/               # Sample input/output
+
 │   ├── test_input/
+
 │   │   └── manifest.yml   # Sample config
+
 │   └── test_output/
+
 │
-├── web_app/               # Optional: community recording app
+
+├── web_app/               # Community recording app
+
 │   ├── backend/           # FastAPI + SQLite (port 8000)
+
+│   │   └── data/
+
+│   │       ├── input/     # Raw audio uploads + manifest.yml (auto-generated)
+
+│   │       └── audio/     # Pipeline output WAVs
+
 │   └── frontend/          # Next.js + Tailwind (port 3000)
+
 │
+
 ├── run.sh / run.bat       # Cross-platform launcher
+
 ├── pipeline_architecture.md
+
 └── README.md
-```
 
 ---
 
-## Optional: Web App
+## Web App
 
-A community recording interface that feeds into the pipeline. Users select
-their dialect, record sentences from a prompt list, and submit.
+A community recording interface that feeds directly into the pipeline. Users select their dialect, record sentences from a prompt list, and submit. Each submission is automatically saved to `web_app/backend/data/input/` and appended to `manifest.yml` — ready for the pipeline to consume.
 
 ### Quick Start
 
 ```bash
-cd web_app/backend && pip install -r requirements.txt
+# Install dependencies
+cd web_app/backend && python -m pip install -r requirements.txt
 cd web_app/frontend && npm install
 
 # Terminal 1 — backend
-cd web_app/backend && uvicorn app.main:app --reload --port 8000
+cd web_app/backend && python -m uvicorn app.main:app --reload --port 8000
 
 # Terminal 2 — frontend
 cd web_app/frontend && npm run dev
 ```
 
+Or use the Makefile:
+
+```bash
+make dev-backend   # Terminal 1
+make dev-frontend  # Terminal 2
+```
+
 | Endpoint | Description |
 |---|---|
-| `GET /api/health` | Health check |
+| `GET /api/health` | Health check (tests DB connection) |
 | `GET /api/prompt?dialect=naga` | Get next recording prompt |
-| `POST /api/record` | Submit audio (multipart) |
+| `POST /api/record` | Submit audio (multipart, rate limited: 10/min) |
 | `GET /api/stats` | Dashboard statistics |
 
-Recordings are stored in `web_app/backend/data/audio/`. To feed them
-into the pipeline, create a `manifest.yml` pointing to those WAV files
-with `source_type: app_recording`.
+### Data Flow
+User records audio (browser)
+
+↓
+
+POST /api/record
+
+↓
+
+Raw audio saved to data/input/{rec_id}.webm
+
+↓
+
+Entry auto-appended to data/input/manifest.yml
+
+↓
+
+Pipeline: ./run.bat data/input/ data/audio/
+
+### Backend Improvements
+
+- DB connection leaks fixed using `contextlib.closing`
+- ffmpeg availability checked on startup
+- `/api/health` tests live DB connection
+- Dialect input validated via enum (`naga` or `albay` only)
+- Rate limiting on `POST /api/record` (10 requests/minute per IP)
+- Stats endpoint uses optimized combined queries
+- Prompt fallback correctly returns any dialect when requested dialect has no prompts
 
 ---
 
 ## Background
 
-Bikol is a Philippine macrolanguage with multiple dialect varieties
-(Naga/Coastal, Albay/Inland, Rinconada, and others). Despite millions of
-speakers, no publicly available speech dataset labels these varieties.
-This pipeline produces the first open, reproducible tool for building
-Bikol dialect speech datasets from arbitrary audio sources.
+Bikol is a Philippine macrolanguage with multiple dialect varieties (Naga/Coastal, Albay/Inland, Rinconada, and others). Despite millions of speakers, no publicly available speech dataset labels these varieties. This pipeline produces the first open, reproducible tool for building Bikol dialect speech datasets from arbitrary audio sources.
 
-See `pipeline_architecture.md` for the full specification, including
-design decisions, edge cases, and model limitations.
+See `pipeline_architecture.md` for the full specification, including design decisions, edge cases, and model limitations.

@@ -2,6 +2,7 @@ import {
   Achievement,
   DashboardStats,
   LeaderboardEntry,
+  PipelineRun,
   Recording,
   SentenceItem,
 } from "./types";
@@ -71,3 +72,66 @@ export const MOCK_RECORDINGS: Recording[] = [
     created_at: new Date().toISOString(),
   },
 ];
+
+// Mirrors the actual CLI sample output for `run.bat testing/test_input testing/test_output`
+// (1 input file -> nba.m4a, 3 segments, 2 kept / 1 rejected as not_ph_language).
+export const MOCK_PIPELINE_RUN: PipelineRun = {
+  run_id: "run-demo-1",
+  status: "done",
+  files: [{
+    file_name: "nba.m4a",
+    source_name: "XXX",
+    source_type: "XXX",
+    label_dialect: "albay",
+    stages: [
+      { name: "normalize", status: "done" },
+      { name: "segment", status: "done" },
+      { name: "classify", status: "done" },
+    ],
+    segments: [
+      { label: "tgl 1.000s", status: "kept", duration_s: 1.0 },
+      { label: "tgl 0.955s", status: "kept", duration_s: 0.955 },
+      { label: "sum 0.761s", status: "rejected", duration_s: 0.761 },
+    ],
+    result: "done",
+  }],
+  summary: {
+    normalization: "successful",
+    segment_files: 1,
+    segment_count: 3,
+    segment_duration_s: 29.0,
+    classify_retained: 2,
+    classify_rejected: 1,
+    rejection_reasons: { not_ph_language: 1 },
+    dialect: "albay",
+    run_time_s: 53.0,
+  },
+  output_log: [
+    "==========================================",
+    "  Bikol Speech Preprocessing Pipeline",
+    "==========================================",
+    "",
+    "Input files: 1",
+    "  Stage 1 (normalize):  1 ok, 0 failed",
+    "  Stage 2 (segment):    3 segments",
+    "  Stage 3 (classify):   2 kept, 1 rejected",
+    "    Reject reasons:",
+    "      not_ph_language : 1",
+    "",
+    "Output:",
+    "  test_output/audio/      : 2 segments",
+    "  test_output/rejected/   : 1 segments",
+    "  test_output/manifest.csv: 2 rows",
+    "  test_output/rejected.csv: 1 rows",
+    "  test_output/pipeline.log: 734 bytes",
+    "",
+    "Done.",
+  ],
+  output_paths: {
+    audio_dir: "test_output/audio/",
+    rejected_dir: "test_output/rejected/",
+    manifest_csv: "test_output/manifest.csv",
+    rejected_csv: "test_output/rejected.csv",
+    pipeline_log: "test_output/pipeline.log",
+  },
+};

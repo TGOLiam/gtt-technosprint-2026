@@ -1,119 +1,493 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { NavBar } from "@/components/nav-bar";
-import { Card, StatCard } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getDashboardStats, getLeaderboard } from "@/lib/api";
-import { MOCK_ACHIEVEMENTS } from "@/lib/mock-data";
-import { DashboardStats, LeaderboardEntry } from "@/lib/types";
-import { Loader2, MapPin, Trophy } from "lucide-react";
+import { usePipelinePolling } from "@/lib/use-pipeline-polling";
+import {
+  Upload,
+  Download,
+  Square,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Circle,
+  FileAudio,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getPipelineDownloadUrl } from "@/lib/api";
+
+function cliOutput(run: any, elapsed: number): string {
+  const sep = "─".repeat(72);
+  const header = "Bikol Speech Pipeline";
+  const input = `  input   (${run.files.length} file${run.files.length !== 1 ? 's' : ''})`;
+  const output = `  output  data/output/${run.run_id}/`;
+
+  const fileRows = run.files.map((f: any, i: number) => {
+    const stages = f.stages.map((s: any) => s.status.padEnd(10)).join(" ");
+    const result = f.result === "done" ? "Done" : f.result;
+    const segs = f.segments.map((s: any) => {
+      const icon = s.status === "kept" ? "✓" : "✗";
+      return `  ${icon}  ${s.label.padEnd(20)}  done`;
+    }).join("\n");
+    const segBlock = segs ? "\n" + segs : "";
+    return `  [${i+1}/${run.files.length}]  ${f.file_name.padEnd(28)}  ${stages}${" ".repeat(6)}${result}${segBlock}`;
+  }).join("\n");
+
+  let summary = "";
+  summary += `  normalize    ${run.summary.normalization}\n`;
+  summary += `  segment      ${run.summary.segment_files} file${run.summary.segment_files !== 1 ? 's' : ''}  →  ${run.summary.segment_count} segments\n`;
+  summary += `  classify     ${run.summary.classify_retained} kept  ${run.summary.classify_rejected} rejected\n`;
+  if (Object.keys(run.summary.rejection_reasons).length > 0) {
+    summary += "  rejections   " + Object.entries(run.summary.rejection_reasons).map(([k, v]) => `${k}: ${v}`).join("  ") + "\n";
+  }
+  summary += `  dialect      ${run.summary.dialect}\n`;
+
+  const footer = run.status === "done"
+    ? `✓ Pipeline complete  ${elapsed}s  →  data/output/${run.run_id}/`
+    : run.status === "running"
+    ? `Running...  ${elapsed}s`
+    : `Pipeline ${run.status}`;
+
+  return `${header}\n${sep}\n${input}\n${output}\n${sep}\n${fileRows}\n${sep}\n${summary.trim()}\n${sep}\n${footer}`;
+}
+
+function StageIcon({ status }: { status: string }) {
+  if (status === "done") return <CheckCircle2 size={14} className="text-leaf" />;
+  if (status === "running")
+    return <Loader2 size={14} className="animate-spin text-marigold-deep" />;
+  if (status === "failed") return <XCircle size={14} className="text-maroon" />;
+  return <Circle size={14} className="text-ink-soft/40" />;
+}
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const { run, error, start, stop, resume, resumeFromSession, reset, isRunning } = usePipelinePolling();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const runIdFromUrl = searchParams.get("run_id");
+  const hasResumed = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [sourceName, setSourceName] = useState("");
+  const [sourceType, setSourceType] = useState("");
+  const [dialect, setDialect] = useState<string>("");
+  const [fileNames, setFileNames] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Client-side running timer
   useEffect(() => {
-    getDashboardStats().then(setStats);
-    getLeaderboard().then(setLeaderboard);
-  }, []);
+    if (run?.status === "running" || run?.status === "queued") {
+      const interval = setInterval(() => setElapsed(prev => prev + 1), 1000);
+      return () => clearInterval(interval);
+    } else if (run && run.summary.run_time_s > 0) {
+      setElapsed(Math.round(run.summary.run_time_s));
+    }
+  }, [run?.status]);
+
+  // Resume from sessionStorage first (survives page navigation),
+  // then fall back to URL query param (for links / bookmarks).
+  useEffect(() => {
+    if (hasResumed.current) return;
+    hasResumed.current = true;
+
+    const fromSession = resumeFromSession();
+    if (!fromSession && runIdFromUrl) {
+      resume(runIdFromUrl);
+    }
+  }, [runIdFromUrl, resume, resumeFromSession]);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const incoming = Array.from(files);
+    const existingNames = new Set(selectedFiles.map(f => f.name));
+    const newFiles = incoming.filter(f => !existingNames.has(f.name));
+    if (newFiles.length === 0) return;
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    setFileNames(prev => [...prev, ...newFiles.map(f => f.name)]);
+    setSubmitted(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleSubmit() {
+    if (selectedFiles.length === 0) return;
+    setSubmitted(true);
+  }
+
+  async function handleStart() {
+    if (selectedFiles.length === 0) return;
+    hasResumed.current = true;
+    setElapsed(0);
+    const runId = await start({ files: selectedFiles, sourceName, sourceType, dialect });
+    setSourceName("");
+    setSourceType("");
+    setDialect("");
+    if (runId) {
+      router.push(`/dashboard?run_id=${runId}`);
+    }
+  }
+
+  function handleClear() {
+    setSelectedFiles([]);
+    setFileNames([]);
+    setSubmitted(false);
+    setElapsed(0);
+    setSourceName("");
+    setSourceType("");
+    setDialect("");
+    reset();
+    router.replace("/dashboard");
+  }
 
   return (
     <>
       <NavBar />
-      <main className="weave-bg flex-1 px-6 py-12">
-        <div className="mx-auto max-w-4xl">
+      <main className="weave-bg flex-1 px-6 py-10">
+        <div className="mx-auto max-w-6xl">
           <h1 className="font-display text-3xl font-extrabold text-ink">
             Dashboard
           </h1>
           <p className="mt-1 text-ink-soft">
-            How the dataset is growing, at a glance.
+            Run the Bikol speech preprocessing pipeline on an audio file —
+            normalize, segment, and classify, same as the CLI.
           </p>
 
-          {/* Stat cards */}
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {!stats ? (
-              <div className="col-span-4 flex items-center justify-center gap-2 py-8 text-ink-soft">
-                <Loader2 className="animate-spin" size={18} /> Loading stats…
-              </div>
-            ) : (
-              <>
-                <StatCard label="Total Recordings" value={stats.total_recordings} />
-                <StatCard label="Native Contributors" value={stats.native_contributors} />
-                <StatCard label="Average Quality" value={stats.average_quality} unit="%" />
-                <StatCard label="Hours Collected" value={stats.hours_collected} unit="hrs" />
-              </>
-            )}
-          </div>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            {/* Leaderboard */}
-            <Card>
-              <h2 className="font-display flex items-center gap-2 text-lg font-bold text-ink">
-                <Trophy size={18} className="text-marigold-deep" /> Top Contributors
-              </h2>
-              <ul className="mt-4 space-y-3">
-                {!leaderboard ? (
-                  <li className="text-sm text-ink-soft">Loading…</li>
-                ) : (
-                  leaderboard.map((entry, i) => (
-                    <li
-                      key={entry.username}
-                      className="flex items-center justify-between rounded-xl bg-cream-deep/50 px-4 py-2.5"
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="font-display flex h-7 w-7 items-center justify-center rounded-full bg-maroon text-xs font-bold text-cream">
-                          {i + 1}
-                        </span>
-                        <span className="font-semibold text-ink">{entry.username}</span>
-                        <Badge tone="neutral" className="text-[10px]">
-                          {entry.region}
-                        </Badge>
-                      </span>
-                      <span className="font-display font-bold text-maroon">
-                        {entry.count}
-                      </span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </Card>
-
-            {/* Achievements */}
-            <Card>
-              <h2 className="font-display text-lg font-bold text-ink">
-                Achievements
-              </h2>
-              <ul className="mt-4 space-y-3">
-                {MOCK_ACHIEVEMENTS.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-xl bg-cream-deep/50 px-4 py-2.5"
-                  >
-                    <span className="text-xl">{a.emoji}</span>
-                    <span className="font-medium text-ink">{a.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-
-          {/* Regional accents */}
-          <Card className="mt-6">
-            <h2 className="font-display text-lg font-bold text-ink">
-              Regional Accents
-            </h2>
-            <div className="mt-4 flex gap-3">
-              {["Naga", "Albay"].map((region) => (
-                <span
-                  key={region}
-                  className="flex items-center gap-1.5 rounded-full bg-marigold/15 px-4 py-2 text-sm font-semibold text-marigold-deep"
+          <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
+            {/* Sidebar */}
+            <div className="space-y-6">
+              <Card>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="audio/*,.m4a,.wav,.mp3"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isRunning}
+                  className="w-full"
+                  size="sm"
                 >
-                  <MapPin size={14} /> {region}
-                </span>
-              ))}
+                  <Upload size={16} /> {fileNames.length > 0 ? "Add more files" : "Upload audio files"}
+                </Button>
+
+                <div className="mt-5 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Source Name
+                    </label>
+                    <input
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                      placeholder="e.g. learnbicol"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Source Type
+                    </label>
+                    <input
+                      value={sourceType}
+                      onChange={(e) => setSourceType(e.target.value)}
+                      placeholder="e.g. dictionary"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Label Dialect
+                    </label>
+                    <input
+                      value={dialect}
+                      onChange={(e) => setDialect(e.target.value)}
+                      placeholder="e.g. naga, albay, rinconada"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {fileNames.length > 0 && (
+                  <>
+                    <div className="mt-5 border-t-2 border-ink/10 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                        File Details
+                      </p>
+                      <dl className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Files</dt>
+                          <dd className="truncate font-medium text-ink">{fileNames.length} file{fileNames.length !== 1 ? 's' : ''}</dd>
+                        </div>
+                        {fileNames.map((name, i) => (
+                          <div key={i} className="flex items-center justify-between gap-2 pl-2">
+                            <dt className="truncate text-ink-soft">{name}</dt>
+                            {!submitted && !isRunning && (
+                              <button
+                                onClick={() => {
+                                  setSelectedFiles(prev => prev.filter((_, idx) => idx !== i));
+                                  setFileNames(prev => prev.filter((_, idx) => idx !== i));
+                                }}
+                                className="text-xs text-maroon hover:underline"
+                              >
+                                remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Source Name</dt>
+                          <dd className="font-medium text-ink">{sourceName || "—"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Source Type</dt>
+                          <dd className="font-medium text-ink">{sourceType || "—"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Label Dialect</dt>
+                          <dd className="font-medium capitalize text-ink">{dialect}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    {!submitted ? (
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={selectedFiles.length === 0}
+                        className="mt-4 w-full"
+                        size="sm"
+                      >
+                        Submit
+                      </Button>
+                    ) : (
+                      <p className="mt-4 text-center text-sm font-medium text-leaf">
+                        ✓ Files ready — add more or start
+                      </p>
+                    )}
+                  </>
+                )}
+              </Card>
+
+              {run && (
+                <Card>
+                  <p className="font-display text-sm font-bold text-ink">Summary</p>
+                  <dl className="mt-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Normalization</dt>
+                      <dd className="font-medium capitalize text-ink">
+                        {run.summary.normalization}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Segment</dt>
+                      <dd className="text-right font-medium text-ink">
+                        {run.summary.segment_files} file
+                        <br />
+                        {run.summary.segment_count} segments
+                        <br />
+                        {run.summary.segment_duration_s.toFixed(1)}s total
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Classify</dt>
+                      <dd className="text-right font-medium text-ink">
+                        {run.summary.classify_retained} retained
+                        <br />
+                        {run.summary.classify_rejected} rejected
+                      </dd>
+                    </div>
+                    {Object.keys(run.summary.rejection_reasons).length > 0 && (
+                      <div className="flex justify-between">
+                        <dt className="text-ink-soft">Rejections</dt>
+                        <dd className="text-right font-medium text-ink">
+                          {Object.entries(run.summary.rejection_reasons).map(
+                            ([reason, count]) => (
+                              <div key={reason}>
+                                {reason}: {count}
+                              </div>
+                            )
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Dialect</dt>
+                      <dd className="font-medium capitalize text-ink">
+                        {run.summary.dialect}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Run Time</dt>
+                      <dd className="font-medium text-ink">
+                        {run.summary.run_time_s.toFixed(1)}s
+                      </dd>
+                    </div>
+                  </dl>
+                </Card>
+              )}
             </div>
-          </Card>
+
+            {/* Main panel */}
+            <div className="space-y-6">
+              <Card>
+                <h2 className="font-display text-lg font-bold text-ink">
+                  Pipeline Overview
+                </h2>
+
+                {!run ? (
+                  submitted ? (
+                    <>
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                              <th className="py-2 pr-4">File</th>
+                              <th className="py-2 pr-4">Normalize</th>
+                              <th className="py-2 pr-4">Segment</th>
+                              <th className="py-2 pr-4">Classify</th>
+                              <th className="py-2">Result</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fileNames.map((name, i) => (
+                              <tr key={i} className="border-b border-ink/5 align-top">
+                                <td className="py-3 pr-4 font-medium text-ink">
+                                  [{i+1}/{fileNames.length}] — {name}
+                                </td>
+                                {["normalize", "segment", "classify"].map((s) => (
+                                  <td key={s} className="py-3 pr-4">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <Circle size={14} className="text-ink-soft/40" />
+                                      <span className="capitalize text-ink-soft">pending</span>
+                                    </span>
+                                  </td>
+                                ))}
+                                <td className="py-3">
+                                  <Badge tone="marigold">Ready</Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
+                        <Button onClick={handleStart} disabled={selectedFiles.length === 0} size="sm">
+                          Start
+                        </Button>
+                        <Button onClick={handleClear} size="sm">
+                          Clear
+                        </Button>
+                        <Button disabled size="sm">
+                          <Download size={16} /> Download Output (zip)
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-8 flex flex-col items-center gap-2 py-10 text-center text-ink-soft">
+                      <FileAudio size={32} className="opacity-40" />
+                      <p className="text-sm">
+                        Upload an audio file to run it through the pipeline.
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                            <th className="py-2 pr-4">File</th>
+                            <th className="py-2 pr-4">Normalize</th>
+                            <th className="py-2 pr-4">Segment</th>
+                            <th className="py-2 pr-4">Classify</th>
+                            <th className="py-2">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {run.files.map((file, i) => (
+                            <tr key={i} className="border-b border-ink/5 align-top">
+                              <td className="py-3 pr-4 font-medium text-ink">
+                                [{i+1}/{run.files.length}] — {file.file_name}
+                              </td>
+                              {file.stages.map((stage) => (
+                                <td key={stage.name} className="py-3 pr-4">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <StageIcon status={stage.status} />
+                                    <span className="capitalize text-ink-soft">
+                                      {stage.status}
+                                    </span>
+                                  </span>
+                                </td>
+                              ))}
+                              <td className="py-3">
+                                {run.status === "done" ? (
+                                  <Badge tone="leaf">Done</Badge>
+                                ) : run.status === "failed" ? (
+                                  <Badge tone="maroon">Failed</Badge>
+                                ) : (
+                                  <Badge tone="marigold">Running</Badge>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
+                      <Button
+                        onClick={handleStart}
+                        disabled={isRunning || selectedFiles.length === 0}
+                        size="sm"
+                      >
+                        Start
+                      </Button>
+                      {isRunning && (
+                        <Button
+                          onClick={stop}
+                          size="sm"
+                          tone="maroon"
+                        >
+                          <Square size={16} /> Stop
+                        </Button>
+                      )}
+                      <Button onClick={handleClear} size="sm">
+                        Clear
+                      </Button>
+                      <a
+                        href={run.status === "done" ? getPipelineDownloadUrl(run.run_id) : undefined}
+                      >
+                        <Button
+                          disabled={run.status !== "done"}
+                          size="sm"
+                        >
+                          <Download size={16} /> Download Output (zip)
+                        </Button>
+                      </a>
+                    </div>
+                  </>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="font-display text-sm font-bold text-ink">Output</h2>
+                <pre className="mt-3 max-h-96 overflow-y-auto rounded-xl bg-ink/95 p-4 text-xs leading-relaxed text-marigold/90">
+{run ? cliOutput(run, elapsed) : "Waiting for a file to process…"}
+                </pre>
+              </Card>
+
+              {error && (
+                <p className="text-sm font-medium text-maroon">{error}</p>
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </>
