@@ -110,6 +110,7 @@ export default function DashboardPage() {
     if (newFiles.length === 0) return;
     setSelectedFiles(prev => [...prev, ...newFiles]);
     setFileNames(prev => [...prev, ...newFiles.map(f => f.name)]);
+    setSubmitted(true);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -117,15 +118,13 @@ export default function DashboardPage() {
     if (selectedFiles.length === 0) return;
     hasResumed.current = true;
     setElapsed(0);
+    setSourceName("");
+    setSourceType("");
+    setDialect("");
     const runId = await start({ files: selectedFiles, sourceName, sourceType, dialect });
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
     }
-  }
-
-  function handleSubmit() {
-    if (selectedFiles.length === 0) return;
-    setSubmitted(true);
   }
 
   function handleClear() {
@@ -254,22 +253,9 @@ export default function DashboardPage() {
                         </div>
                       </dl>
                     </div>
-                    {!submitted ? (
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={selectedFiles.length === 0}
-                        className="mt-4 w-full"
-                        size="sm"
-                      >
-                        Submit
-                      </Button>
-                    ) : (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-center text-sm font-medium text-leaf">
-                          ✓ Files ready
-                        </p>
-                      </div>
-                    )}
+                    <p className="mt-4 text-center text-sm font-medium text-leaf">
+                      ✓ {fileNames.length} file{fileNames.length !== 1 ? 's' : ''} selected
+                    </p>
                   </>
                 )}
               </Card>
