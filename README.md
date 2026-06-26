@@ -194,3 +194,12 @@ See `pipeline_architecture.md` for the full specification, including design deci
 ## AI Disclosure
 ChatGPT, Claude, and Meta AI (Facebook MMS-LID-2056) were used to assist in brainstorming, writing refinement, and content organization. All AI-generated outputs were reviewed, edited, and validated by the team, and all final content and decisions remain the responsibility of the authors.
 
+## Team
+
+| Name | Role |
+|---|---|
+| Ebron, Nicole Anne V. | |
+| Nadela, Theo A. | |
+| Pocsidio, Aidhen Angel M. | |
+| Serrano, Liam Brent C. | |
+
