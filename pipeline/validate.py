@@ -1,7 +1,22 @@
+import logging
+import os
+import warnings
+
 import torch
 from transformers import pipeline
+from transformers.utils import logging as transformers_logging
 
 from pipeline.config import MODEL_ID, KNOWN_PH_LANGS
+
+os.environ["TQDM_DISABLE"] = "1"
+transformers_logging.set_verbosity_error()
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
+try:
+    from huggingface_hub.utils import disable_progress_bars as _hfp
+    _hfp()
+except ImportError:
+    pass
 
 
 def detect_device():

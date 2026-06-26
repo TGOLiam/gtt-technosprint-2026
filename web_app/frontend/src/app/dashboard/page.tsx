@@ -1,119 +1,314 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { NavBar } from "@/components/nav-bar";
-import { Card, StatCard } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getDashboardStats, getLeaderboard } from "@/lib/api";
-import { MOCK_ACHIEVEMENTS } from "@/lib/mock-data";
-import { DashboardStats, LeaderboardEntry } from "@/lib/types";
-import { Loader2, MapPin, Trophy } from "lucide-react";
+import { usePipelinePolling } from "@/lib/use-pipeline-polling";
+import { Region } from "@/lib/types";
+import {
+  Upload,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Circle,
+  FileAudio,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const REGIONS: Region[] = ["naga", "albay"];
+
+function StageIcon({ status }: { status: string }) {
+  if (status === "done") return <CheckCircle2 size={14} className="text-leaf" />;
+  if (status === "running")
+    return <Loader2 size={14} className="animate-spin text-marigold-deep" />;
+  if (status === "failed") return <XCircle size={14} className="text-maroon" />;
+  return <Circle size={14} className="text-ink-soft/40" />;
+}
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const { run, error, start, isRunning } = usePipelinePolling();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    getDashboardStats().then(setStats);
-    getLeaderboard().then(setLeaderboard);
-  }, []);
+  const [sourceName, setSourceName] = useState("");
+  const [sourceType, setSourceType] = useState("");
+  const [dialect, setDialect] = useState<Region>("albay");
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    start({ file, sourceName, sourceType, dialect });
+  }
 
   return (
     <>
       <NavBar />
-      <main className="weave-bg flex-1 px-6 py-12">
-        <div className="mx-auto max-w-4xl">
+      <main className="weave-bg flex-1 px-6 py-10">
+        <div className="mx-auto max-w-6xl">
           <h1 className="font-display text-3xl font-extrabold text-ink">
             Dashboard
           </h1>
           <p className="mt-1 text-ink-soft">
-            How the dataset is growing, at a glance.
+            Run the Bikol speech preprocessing pipeline on an audio file —
+            normalize, segment, and classify, same as the CLI.
           </p>
 
-          {/* Stat cards */}
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {!stats ? (
-              <div className="col-span-4 flex items-center justify-center gap-2 py-8 text-ink-soft">
-                <Loader2 className="animate-spin" size={18} /> Loading stats…
-              </div>
-            ) : (
-              <>
-                <StatCard label="Total Recordings" value={stats.total_recordings} />
-                <StatCard label="Native Contributors" value={stats.native_contributors} />
-                <StatCard label="Average Quality" value={stats.average_quality} unit="%" />
-                <StatCard label="Hours Collected" value={stats.hours_collected} unit="hrs" />
-              </>
-            )}
-          </div>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            {/* Leaderboard */}
-            <Card>
-              <h2 className="font-display flex items-center gap-2 text-lg font-bold text-ink">
-                <Trophy size={18} className="text-marigold-deep" /> Top Contributors
-              </h2>
-              <ul className="mt-4 space-y-3">
-                {!leaderboard ? (
-                  <li className="text-sm text-ink-soft">Loading…</li>
-                ) : (
-                  leaderboard.map((entry, i) => (
-                    <li
-                      key={entry.username}
-                      className="flex items-center justify-between rounded-xl bg-cream-deep/50 px-4 py-2.5"
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="font-display flex h-7 w-7 items-center justify-center rounded-full bg-maroon text-xs font-bold text-cream">
-                          {i + 1}
-                        </span>
-                        <span className="font-semibold text-ink">{entry.username}</span>
-                        <Badge tone="neutral" className="text-[10px]">
-                          {entry.region}
-                        </Badge>
-                      </span>
-                      <span className="font-display font-bold text-maroon">
-                        {entry.count}
-                      </span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </Card>
-
-            {/* Achievements */}
-            <Card>
-              <h2 className="font-display text-lg font-bold text-ink">
-                Achievements
-              </h2>
-              <ul className="mt-4 space-y-3">
-                {MOCK_ACHIEVEMENTS.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-xl bg-cream-deep/50 px-4 py-2.5"
-                  >
-                    <span className="text-xl">{a.emoji}</span>
-                    <span className="font-medium text-ink">{a.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-
-          {/* Regional accents */}
-          <Card className="mt-6">
-            <h2 className="font-display text-lg font-bold text-ink">
-              Regional Accents
-            </h2>
-            <div className="mt-4 flex gap-3">
-              {["Naga", "Albay"].map((region) => (
-                <span
-                  key={region}
-                  className="flex items-center gap-1.5 rounded-full bg-marigold/15 px-4 py-2 text-sm font-semibold text-marigold-deep"
+          <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
+            {/* Sidebar */}
+            <div className="space-y-6">
+              <Card>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.m4a,.wav,.mp3"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isRunning}
+                  className="w-full"
+                  size="sm"
                 >
-                  <MapPin size={14} /> {region}
-                </span>
-              ))}
+                  <Upload size={16} /> Upload audio file
+                </Button>
+
+                <div className="mt-5 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Source Name
+                    </label>
+                    <input
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                      placeholder="e.g. learnbicol"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Source Type
+                    </label>
+                    <input
+                      value={sourceType}
+                      onChange={(e) => setSourceType(e.target.value)}
+                      placeholder="e.g. dictionary"
+                      disabled={isRunning}
+                      className="mt-1 w-full rounded-lg border-2 border-ink/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-maroon disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      Label Dialect
+                    </label>
+                    <div className="mt-1 flex gap-2">
+                      {REGIONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          disabled={isRunning}
+                          onClick={() => setDialect(r)}
+                          className={cn(
+                            "flex-1 rounded-lg border-2 px-3 py-1.5 text-sm font-medium capitalize transition-colors disabled:opacity-50",
+                            dialect === r
+                              ? "border-maroon bg-maroon/5 text-maroon"
+                              : "border-ink/10 bg-white text-ink-soft"
+                          )}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {fileName && (
+                  <div className="mt-5 border-t-2 border-ink/10 pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                      File Details
+                    </p>
+                    <dl className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-ink-soft">File Name</dt>
+                        <dd className="truncate font-medium text-ink">{fileName}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-ink-soft">Source Name</dt>
+                        <dd className="font-medium text-ink">{sourceName || "—"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-ink-soft">Source Type</dt>
+                        <dd className="font-medium text-ink">{sourceType || "—"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-ink-soft">Label Dialect</dt>
+                        <dd className="font-medium capitalize text-ink">{dialect}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+              </Card>
+
+              {run && (
+                <Card>
+                  <p className="font-display text-sm font-bold text-ink">Summary</p>
+                  <dl className="mt-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Normalization</dt>
+                      <dd className="font-medium capitalize text-ink">
+                        {run.summary.normalization}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Segment</dt>
+                      <dd className="text-right font-medium text-ink">
+                        {run.summary.segment_files} file
+                        <br />
+                        {run.summary.segment_count} segments
+                        <br />
+                        {run.summary.segment_duration_s.toFixed(1)}s total
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Classify</dt>
+                      <dd className="text-right font-medium text-ink">
+                        {run.summary.classify_retained} retained
+                        <br />
+                        {run.summary.classify_rejected} rejected
+                      </dd>
+                    </div>
+                    {Object.keys(run.summary.rejection_reasons).length > 0 && (
+                      <div className="flex justify-between">
+                        <dt className="text-ink-soft">Rejections</dt>
+                        <dd className="text-right font-medium text-ink">
+                          {Object.entries(run.summary.rejection_reasons).map(
+                            ([reason, count]) => (
+                              <div key={reason}>
+                                {reason}: {count}
+                              </div>
+                            )
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Dialect</dt>
+                      <dd className="font-medium capitalize text-ink">
+                        {run.summary.dialect}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-soft">Run Time</dt>
+                      <dd className="font-medium text-ink">
+                        {run.summary.run_time_s.toFixed(1)}s
+                      </dd>
+                    </div>
+                  </dl>
+                </Card>
+              )}
             </div>
-          </Card>
+
+            {/* Main panel */}
+            <div className="space-y-6">
+              <Card>
+                <h2 className="font-display text-lg font-bold text-ink">
+                  Pipeline Overview
+                </h2>
+
+                {!run ? (
+                  <div className="mt-8 flex flex-col items-center gap-2 py-10 text-center text-ink-soft">
+                    <FileAudio size={32} className="opacity-40" />
+                    <p className="text-sm">
+                      Upload an audio file to run it through the pipeline.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                          <th className="py-2 pr-4">File</th>
+                          <th className="py-2 pr-4">Normalize</th>
+                          <th className="py-2 pr-4">Segment</th>
+                          <th className="py-2 pr-4">Classify</th>
+                          <th className="py-2">Result</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-ink/5 align-top">
+                          <td className="py-3 pr-4 font-medium text-ink">
+                            [1/1] — {run.file.file_name}
+                          </td>
+                          {run.file.stages.map((stage) => (
+                            <td key={stage.name} className="py-3 pr-4">
+                              <span className="inline-flex items-center gap-1.5">
+                                <StageIcon status={stage.status} />
+                                <span className="capitalize text-ink-soft">
+                                  {stage.status}
+                                </span>
+                              </span>
+                            </td>
+                          ))}
+                          <td className="py-3">
+                            {run.status === "done" ? (
+                              <Badge tone="leaf">Done</Badge>
+                            ) : run.status === "failed" ? (
+                              <Badge tone="maroon">Failed</Badge>
+                            ) : (
+                              <Badge tone="marigold">Running</Badge>
+                            )}
+                          </td>
+                        </tr>
+
+                        {run.file.segments.length > 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-2">
+                              <div className="space-y-1.5 pl-2">
+                                {run.file.segments.map((seg, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-center gap-2 text-sm"
+                                  >
+                                    {seg.status === "kept" ? (
+                                      <CheckCircle2
+                                        size={14}
+                                        className="text-leaf"
+                                      />
+                                    ) : (
+                                      <XCircle size={14} className="text-maroon" />
+                                    )}
+                                    <span className="font-mono text-ink-soft">
+                                      {seg.label}
+                                    </span>
+                                    <span className="text-ink-soft/60">Done</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="font-display text-sm font-bold text-ink">Output</h2>
+                <pre className="mt-3 max-h-72 overflow-y-auto rounded-xl bg-ink/95 p-4 text-xs leading-relaxed text-marigold/90">
+{run?.output_log.join("\n") ?? "Waiting for a file to process…"}
+                </pre>
+              </Card>
+
+              {error && (
+                <p className="text-sm font-medium text-maroon">{error}</p>
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </>

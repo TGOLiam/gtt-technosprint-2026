@@ -33,8 +33,13 @@ def convert_to_wav(raw_path: str, rec_id: str) -> str | None:
         str(wav_path),
     ], capture_output=True, text=True)
 
+    raw = Path(raw_path)  # <-- add this
+
     if wav_path.exists() and wav_path.stat().st_size > 0:
+        raw.unlink(missing_ok=True)  # <-- success: delete raw
         return str(wav_path)
+
+    raw.unlink(missing_ok=True)  # <-- failure: delete raw anyway
     return None
 
 

@@ -1,7 +1,0 @@
-Output directory for pipeline results.
-Each run clears this directory and writes:
-  audio/         — kept WAV segments (16kHz mono)
-  rejected/      — rejected WAV segments
-  manifest.csv   — segment metadata (dialect_label + predicted_lang)
-  rejected.csv   — rejected segment metadata
-  pipeline.log   — JSONL provenance log
