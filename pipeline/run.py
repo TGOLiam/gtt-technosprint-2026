@@ -72,6 +72,12 @@ def main():
     counter_width = len(f"[{total}/{total}]") + 1
     start = time.time()
 
+    # ── Load model (before table, so messages show above the header) ──
+    model = None
+    if not args.skip_classify:
+        from pipeline.validate import load_model, classify
+        model = load_model(MODEL_CACHE_DIR)
+
     # ── Header ──
     print(f"\n  {_fmt('Bikol Speech Pipeline', BOLD)}")
     print(f"  {_fmt('─' * 72, DIM)}")
@@ -89,12 +95,6 @@ def main():
     lang_distro: dict[str, int] = defaultdict(int)
     dialect_distro: dict[str, int] = defaultdict(int)
     reject_reasons: dict[str, int] = defaultdict(int)
-
-    # ── Load model ──
-    model = None
-    if not args.skip_classify:
-        from pipeline.validate import load_model, classify
-        model = load_model(MODEL_CACHE_DIR)
 
     # ── Per-file loop ──
     for i, entry in enumerate(entries, 1):
@@ -147,7 +147,7 @@ def main():
                 dialect_distro[entry.get("dialect_label", "unknown")] += 1
                 output.add_row(entry, seg, "", 0.0, dur)
                 kept += 1
-            result_str = _fmt("skip", YELLOW)
+            result_str = _fmt(f"{len(segs)} segs", GREEN)
         else:
             for seg in segs:
                 result = classify(model, seg)
