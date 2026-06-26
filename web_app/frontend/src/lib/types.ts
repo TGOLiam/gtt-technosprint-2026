@@ -99,7 +99,7 @@ export type PipelineRunStatus = "idle" | "queued" | "running" | "done" | "failed
 export interface PipelineRun {
   run_id: string;
   status: PipelineRunStatus;
-  file: PipelineFileResult;
+  files: PipelineFileResult[];
   summary: PipelineSummary;
   output_log: string[]; // tailed lines from pipeline.log
   output_paths?: {

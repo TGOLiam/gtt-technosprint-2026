@@ -78,7 +78,7 @@ export const MOCK_RECORDINGS: Recording[] = [
 export const MOCK_PIPELINE_RUN: PipelineRun = {
   run_id: "run-demo-1",
   status: "done",
-  file: {
+  files: [{
     file_name: "nba.m4a",
     source_name: "XXX",
     source_type: "XXX",
@@ -94,7 +94,7 @@ export const MOCK_PIPELINE_RUN: PipelineRun = {
       { label: "sum 0.761s", status: "rejected", duration_s: 0.761 },
     ],
     result: "done",
-  },
+  }],
   summary: {
     normalization: "successful",
     segment_files: 1,

@@ -41,8 +41,8 @@ export default function DashboardPage() {
   const [sourceName, setSourceName] = useState("");
   const [sourceType, setSourceType] = useState("");
   const [dialect, setDialect] = useState<Region>("albay");
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileNames, setFileNames] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
   // Resume from sessionStorage first (survives page navigation),
@@ -58,24 +58,24 @@ export default function DashboardPage() {
   }, [runIdFromUrl, resume, resumeFromSession]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setFileName(file.name);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setSelectedFiles(Array.from(files));
+    setFileNames(Array.from(files).map(f => f.name));
     setSubmitted(false);
   }
 
   async function handleStart() {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
     hasResumed.current = true;
-    const runId = await start({ file: selectedFile, sourceName, sourceType, dialect });
+    const runId = await start({ files: selectedFiles, sourceName, sourceType, dialect });
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
     }
   }
 
   function handleSubmit() {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
     setSubmitted(true);
   }
 
@@ -99,6 +99,7 @@ export default function DashboardPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept="audio/*,.m4a,.wav,.mp3"
                   className="hidden"
                   onChange={handleFileChange}
@@ -109,7 +110,7 @@ export default function DashboardPage() {
                   className="w-full"
                   size="sm"
                 >
-                  <Upload size={16} /> Upload audio file
+                  <Upload size={16} /> Upload audio files
                 </Button>
 
                 <div className="mt-5 space-y-3">
@@ -162,7 +163,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {fileName && (
+                {fileNames.length > 0 && (
                   <>
                     <div className="mt-5 border-t-2 border-ink/10 pt-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
@@ -170,9 +171,14 @@ export default function DashboardPage() {
                       </p>
                       <dl className="mt-2 space-y-1 text-sm">
                         <div className="flex justify-between gap-2">
-                          <dt className="text-ink-soft">File Name</dt>
-                          <dd className="truncate font-medium text-ink">{fileName}</dd>
+                          <dt className="text-ink-soft">Files</dt>
+                          <dd className="truncate font-medium text-ink">{fileNames.length} file{fileNames.length !== 1 ? 's' : ''}</dd>
                         </div>
+                        {fileNames.map((name, i) => (
+                          <div key={i} className="flex justify-between gap-2 pl-2">
+                            <dt className="truncate text-ink-soft">{name}</dt>
+                          </div>
+                        ))}
                         <div className="flex justify-between gap-2">
                           <dt className="text-ink-soft">Source Name</dt>
                           <dd className="font-medium text-ink">{sourceName || "—"}</dd>
@@ -190,7 +196,7 @@ export default function DashboardPage() {
                     {!submitted ? (
                       <Button
                         onClick={handleSubmit}
-                        disabled={!selectedFile}
+                        disabled={selectedFiles.length === 0}
                         className="mt-4 w-full"
                         size="sm"
                       >
@@ -198,7 +204,7 @@ export default function DashboardPage() {
                       </Button>
                     ) : (
                       <p className="mt-4 text-center text-sm font-medium text-leaf">
-                        ✓ File ready
+                        ✓ Files ready
                       </p>
                     )}
                   </>
@@ -272,7 +278,7 @@ export default function DashboardPage() {
                 </h2>
 
                 {!run ? (
-                  fileName ? (
+                  fileNames.length > 0 ? (
                     <>
                       <div className="mt-4 overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -286,27 +292,29 @@ export default function DashboardPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            <tr className="border-b border-ink/5 align-top">
-                              <td className="py-3 pr-4 font-medium text-ink">
-                                [1/1] — {fileName}
-                              </td>
-                              {["normalize", "segment", "classify"].map((s) => (
-                                <td key={s} className="py-3 pr-4">
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <Circle size={14} className="text-ink-soft/40" />
-                                    <span className="capitalize text-ink-soft">pending</span>
-                                  </span>
+                            {fileNames.map((name, i) => (
+                              <tr key={i} className="border-b border-ink/5 align-top">
+                                <td className="py-3 pr-4 font-medium text-ink">
+                                  [{i+1}/{fileNames.length}] — {name}
                                 </td>
-                              ))}
-                              <td className="py-3">
-                                <Badge tone="marigold">Ready</Badge>
-                              </td>
-                            </tr>
+                                {["normalize", "segment", "classify"].map((s) => (
+                                  <td key={s} className="py-3 pr-4">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <Circle size={14} className="text-ink-soft/40" />
+                                      <span className="capitalize text-ink-soft">pending</span>
+                                    </span>
+                                  </td>
+                                ))}
+                                <td className="py-3">
+                                  <Badge tone="marigold">Ready</Badge>
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
                       <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
-                        <Button onClick={handleStart} disabled={!selectedFile} size="sm">
+                        <Button onClick={handleStart} disabled={selectedFiles.length === 0} size="sm">
                           Start
                         </Button>
                         <Button disabled size="sm">
@@ -336,57 +344,61 @@ export default function DashboardPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="border-b border-ink/5 align-top">
-                            <td className="py-3 pr-4 font-medium text-ink">
-                              [1/1] — {run.file.file_name}
-                            </td>
-                            {run.file.stages.map((stage) => (
-                              <td key={stage.name} className="py-3 pr-4">
-                                <span className="inline-flex items-center gap-1.5">
-                                  <StageIcon status={stage.status} />
-                                  <span className="capitalize text-ink-soft">
-                                    {stage.status}
-                                  </span>
-                                </span>
+                          {run.files.map((file, i) => (
+                            <tr key={i} className="border-b border-ink/5 align-top">
+                              <td className="py-3 pr-4 font-medium text-ink">
+                                [{i+1}/{run.files.length}] — {file.file_name}
                               </td>
-                            ))}
-                            <td className="py-3">
-                              {run.status === "done" ? (
-                                <Badge tone="leaf">Done</Badge>
-                              ) : run.status === "failed" ? (
-                                <Badge tone="maroon">Failed</Badge>
-                              ) : (
-                                <Badge tone="marigold">Running</Badge>
-                              )}
-                            </td>
-                          </tr>
-
-                          {run.file.segments.length > 0 && (
-                            <tr>
-                              <td colSpan={5} className="py-2">
-                                <div className="space-y-1.5 pl-2">
-                                  {run.file.segments.map((seg, i) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-center gap-2 text-sm"
-                                    >
-                                      {seg.status === "kept" ? (
-                                        <CheckCircle2
-                                          size={14}
-                                          className="text-leaf"
-                                        />
-                                      ) : (
-                                        <XCircle size={14} className="text-maroon" />
-                                      )}
-                                      <span className="font-mono text-ink-soft">
-                                        {seg.label}
-                                      </span>
-                                      <span className="text-ink-soft/60">Done</span>
-                                    </div>
-                                  ))}
-                                </div>
+                              {file.stages.map((stage) => (
+                                <td key={stage.name} className="py-3 pr-4">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <StageIcon status={stage.status} />
+                                    <span className="capitalize text-ink-soft">
+                                      {stage.status}
+                                    </span>
+                                  </span>
+                                </td>
+                              ))}
+                              <td className="py-3">
+                                {run.status === "done" ? (
+                                  <Badge tone="leaf">Done</Badge>
+                                ) : run.status === "failed" ? (
+                                  <Badge tone="maroon">Failed</Badge>
+                                ) : (
+                                  <Badge tone="marigold">Running</Badge>
+                                )}
                               </td>
                             </tr>
+                          ))}
+
+                          {run.files.some(f => f.segments.length > 0) && run.files.map((file, fi) =>
+                            file.segments.length > 0 && (
+                              <tr key={`segs-${fi}`}>
+                                <td colSpan={5} className="py-2">
+                                  <div className="space-y-1.5 pl-2">
+                                    {file.segments.map((seg, si) => (
+                                      <div
+                                        key={si}
+                                        className="flex items-center gap-2 text-sm"
+                                      >
+                                        {seg.status === "kept" ? (
+                                          <CheckCircle2
+                                            size={14}
+                                            className="text-leaf"
+                                          />
+                                        ) : (
+                                          <XCircle size={14} className="text-maroon" />
+                                        )}
+                                        <span className="font-mono text-ink-soft">
+                                          {seg.label}
+                                        </span>
+                                        <span className="text-ink-soft/60">Done</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            )
                           )}
                         </tbody>
                       </table>
@@ -394,7 +406,7 @@ export default function DashboardPage() {
                     <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
                       <Button
                         onClick={handleStart}
-                        disabled={isRunning || !selectedFile}
+                        disabled={isRunning || selectedFiles.length === 0}
                         size="sm"
                       >
                         Start

@@ -172,7 +172,7 @@ let mockRunStep = 0;
 
 // POST /pipeline/run
 export async function startPipelineRun(params: {
-  file: File;
+  files: File[];
   sourceName?: string;
   sourceType?: string;
   dialect?: Region;
@@ -183,7 +183,9 @@ export async function startPipelineRun(params: {
     return { run_id: "run-demo-1" };
   }
   const form = new FormData();
-  form.append("file", params.file);
+  for (const f of params.files) {
+    form.append("files", f);
+  }
   if (params.sourceName) form.append("source_name", params.sourceName);
   if (params.sourceType) form.append("source_type", params.sourceType);
   if (params.dialect) form.append("dialect", params.dialect);
@@ -204,7 +206,7 @@ export async function getPipelineRun(runId: string): Promise<PipelineRun> {
     await sleep(500);
     mockRunStep = Math.min(mockRunStep + 1, 4);
 
-    const stages = MOCK_PIPELINE_RUN.file.stages.map((s, i) => ({
+    const stages = MOCK_PIPELINE_RUN.files[0].stages.map((s, i) => ({
       ...s,
       status:
         mockRunStep > i ? ("done" as const) : i === mockRunStep ? ("running" as const) : ("pending" as const),
@@ -216,12 +218,12 @@ export async function getPipelineRun(runId: string): Promise<PipelineRun> {
       ...MOCK_PIPELINE_RUN,
       run_id: runId,
       status: isDone ? "done" : "running",
-      file: {
-        ...MOCK_PIPELINE_RUN.file,
+      files: [{
+        ...MOCK_PIPELINE_RUN.files[0],
         stages,
-        segments: isDone ? MOCK_PIPELINE_RUN.file.segments : [],
+        segments: isDone ? MOCK_PIPELINE_RUN.files[0].segments : [],
         result: isDone ? "done" : "running",
-      },
+      }],
       output_log: isDone
         ? MOCK_PIPELINE_RUN.output_log
         : MOCK_PIPELINE_RUN.output_log.slice(0, 4 + mockRunStep * 2),
