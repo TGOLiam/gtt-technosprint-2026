@@ -251,12 +251,56 @@ export default function DashboardPage() {
                 </h2>
 
                 {!run ? (
-                  <div className="mt-8 flex flex-col items-center gap-2 py-10 text-center text-ink-soft">
-                    <FileAudio size={32} className="opacity-40" />
-                    <p className="text-sm">
-                      Upload an audio file to run it through the pipeline.
-                    </p>
-                  </div>
+                  fileName ? (
+                    <>
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                              <th className="py-2 pr-4">File</th>
+                              <th className="py-2 pr-4">Normalize</th>
+                              <th className="py-2 pr-4">Segment</th>
+                              <th className="py-2 pr-4">Classify</th>
+                              <th className="py-2">Result</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-ink/5 align-top">
+                              <td className="py-3 pr-4 font-medium text-ink">
+                                [1/1] — {fileName}
+                              </td>
+                              {["normalize", "segment", "classify"].map((s) => (
+                                <td key={s} className="py-3 pr-4">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Circle size={14} className="text-ink-soft/40" />
+                                    <span className="capitalize text-ink-soft">pending</span>
+                                  </span>
+                                </td>
+                              ))}
+                              <td className="py-3">
+                                <Badge tone="marigold">Ready</Badge>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
+                        <Button onClick={handleStart} disabled={!selectedFile} size="sm">
+                          Start
+                        </Button>
+                        <Button disabled size="sm">
+                          <Download size={16} /> Download Output (zip)
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-8 flex flex-col items-center gap-2 py-10 text-center text-ink-soft">
+                      <FileAudio size={32} className="opacity-40" />
+                      <p className="text-sm">
+                        Upload an audio file to run it through the pipeline.
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <>
                     <div className="mt-4 overflow-x-auto">
