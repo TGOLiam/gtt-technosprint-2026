@@ -11,6 +11,7 @@ import { Region } from "@/lib/types";
 import {
   Upload,
   Download,
+  Square,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -22,6 +23,41 @@ import { getPipelineDownloadUrl } from "@/lib/api";
 
 const REGIONS: Region[] = ["naga", "albay"];
 
+function cliOutput(run: any): string {
+  const sep = "─".repeat(72);
+  const header = "Bikol Speech Pipeline";
+  const input = `  input   (${run.files.length} file${run.files.length !== 1 ? 's' : ''})`;
+  const output = `  output  data/output/${run.run_id}/`;
+
+  const fileRows = run.files.map((f: any, i: number) => {
+    const stages = f.stages.map((s: any) => s.status.padEnd(10)).join(" ");
+    const result = f.result === "done" ? "Done" : f.result;
+    const segs = f.segments.map((s: any) => {
+      const icon = s.status === "kept" ? "✓" : "✗";
+      return `  ${icon}  ${s.label.padEnd(20)}  done`;
+    }).join("\n");
+    const segBlock = segs ? "\n" + segs : "";
+    return `  [${i+1}/${run.files.length}]  ${f.file_name.padEnd(28)}  ${stages}${" ".repeat(6)}${result}${segBlock}`;
+  }).join("\n");
+
+  let summary = "";
+  summary += `  normalize    ${run.summary.normalization}\n`;
+  summary += `  segment      ${run.summary.segment_files} file${run.summary.segment_files !== 1 ? 's' : ''}  →  ${run.summary.segment_count} segments\n`;
+  summary += `  classify     ${run.summary.classify_retained} kept  ${run.summary.classify_rejected} rejected\n`;
+  if (Object.keys(run.summary.rejection_reasons).length > 0) {
+    summary += "  rejections   " + Object.entries(run.summary.rejection_reasons).map(([k, v]) => `${k}: ${v}`).join("  ") + "\n";
+  }
+  summary += `  dialect      ${run.summary.dialect}\n`;
+
+  const footer = run.status === "done"
+    ? `✓ Pipeline complete  ${run.summary.run_time_s}s  →  data/output/${run.run_id}/`
+    : run.status === "running"
+    ? `Running...  ${run.summary.run_time_s}s`
+    : `Pipeline ${run.status}`;
+
+  return `${header}\n${sep}\n${input}\n${output}\n${sep}\n${fileRows}\n${sep}\n${summary.trim()}\n${sep}\n${footer}`;
+}
+
 function StageIcon({ status }: { status: string }) {
   if (status === "done") return <CheckCircle2 size={14} className="text-leaf" />;
   if (status === "running")
@@ -31,7 +67,7 @@ function StageIcon({ status }: { status: string }) {
 }
 
 export default function DashboardPage() {
-  const { run, error, start, resume, resumeFromSession, reset, isRunning } = usePipelinePolling();
+  const { run, error, start, stop, resume, resumeFromSession, reset, isRunning } = usePipelinePolling();
   const router = useRouter();
   const searchParams = useSearchParams();
   const runIdFromUrl = searchParams.get("run_id");
@@ -386,36 +422,6 @@ export default function DashboardPage() {
                               </td>
                             </tr>
                           ))}
-
-                          {run.files.some(f => f.segments.length > 0) && run.files.map((file, fi) =>
-                            file.segments.length > 0 && (
-                              <tr key={`segs-${fi}`}>
-                                <td colSpan={5} className="py-2">
-                                  <div className="space-y-1.5 pl-2">
-                                    {file.segments.map((seg, si) => (
-                                      <div
-                                        key={si}
-                                        className="flex items-center gap-2 text-sm"
-                                      >
-                                        {seg.status === "kept" ? (
-                                          <CheckCircle2
-                                            size={14}
-                                            className="text-leaf"
-                                          />
-                                        ) : (
-                                          <XCircle size={14} className="text-maroon" />
-                                        )}
-                                        <span className="font-mono text-ink-soft">
-                                          {seg.label}
-                                        </span>
-                                        <span className="text-ink-soft/60">Done</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          )}
                         </tbody>
                       </table>
                     </div>
@@ -427,6 +433,15 @@ export default function DashboardPage() {
                       >
                         Start
                       </Button>
+                      {isRunning && (
+                        <Button
+                          onClick={stop}
+                          size="sm"
+                          tone="maroon"
+                        >
+                          <Square size={16} /> Stop
+                        </Button>
+                      )}
                       <a
                         href={run.status === "done" ? getPipelineDownloadUrl(run.run_id) : undefined}
                       >
@@ -444,8 +459,8 @@ export default function DashboardPage() {
 
               <Card>
                 <h2 className="font-display text-sm font-bold text-ink">Output</h2>
-                <pre className="mt-3 max-h-72 overflow-y-auto rounded-xl bg-ink/95 p-4 text-xs leading-relaxed text-marigold/90">
-{run?.output_log.join("\n") ?? "Waiting for a file to process…"}
+                <pre className="mt-3 max-h-96 overflow-y-auto rounded-xl bg-ink/95 p-4 text-xs leading-relaxed text-marigold/90">
+{run ? cliOutput(run) : "Waiting for a file to process…"}
                 </pre>
               </Card>
 

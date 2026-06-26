@@ -233,3 +233,10 @@ export async function getPipelineRun(runId: string): Promise<PipelineRun> {
   if (!res.ok) throw new Error("Failed to fetch pipeline run status");
   return res.json();
 }
+
+// POST /api/pipeline/{run_id}/stop — interrupts a running pipeline
+export async function stopPipelineRun(runId: string): Promise<{ status: string }> {
+  const res = await fetch(`${API_URL}/api/pipeline/${runId}/stop`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to stop pipeline run");
+  return res.json();
+}

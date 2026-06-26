@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getPipelineRun, startPipelineRun } from "@/lib/api";
+import { getPipelineRun, startPipelineRun, stopPipelineRun } from "@/lib/api";
 import { PipelineRun, Region } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 1500;
@@ -116,6 +116,17 @@ export function usePipelinePolling() {
     return null;
   }, [resume]);
 
+  const stop = useCallback(async () => {
+    const current = run;
+    if (!current) return;
+    stopPolling();
+    clearSession();
+    try {
+      await stopPipelineRun(current.run_id);
+    } catch {}
+    safeSetRun({ ...current, status: "stopped" });
+  }, [run, stopPolling, safeSetRun]);
+
   const reset = useCallback(() => {
     stopPolling();
     safeSetRun(null);
@@ -125,5 +136,5 @@ export function usePipelinePolling() {
 
   useEffect(() => stopPolling, [stopPolling]);
 
-  return { run, error, start, resume, resumeFromSession, reset, isRunning: run?.status === "running" || run?.status === "queued" };
+  return { run, error, start, resume, resumeFromSession, stop, reset, isRunning: run?.status === "running" || run?.status === "queued" };
 }

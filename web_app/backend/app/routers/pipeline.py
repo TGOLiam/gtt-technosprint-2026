@@ -297,6 +297,18 @@ async def run_pipeline(
     return {"run_id": run_id, "status": "queued"}
 
 
+@router.post("/api/pipeline/{run_id}/stop")
+async def stop_pipeline(run_id: str):
+    run_info = _runs.get(run_id)
+    if not run_info:
+        raise HTTPException(status_code=404, detail="Run not found")
+    proc = run_info.get("process")
+    if proc:
+        proc.terminate()
+        run_info["status"] = "stopped"
+    return {"status": "stopped", "run_id": run_id}
+
+
 @router.get("/api/pipeline/runs")
 async def list_pipeline_runs():
     runs = []
