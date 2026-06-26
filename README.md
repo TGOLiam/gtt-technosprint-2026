@@ -209,16 +209,6 @@ Entry auto-appended to data/input/manifest.yml
 
 Pipeline: python tinigbicol.py pipeline data/input/ data/audio/
 
-### Backend Improvements
-
-- DB connection leaks fixed using `contextlib.closing`
-- ffmpeg availability checked on startup
-- `/api/health` tests live DB connection
-- Dialect input validated via enum (`naga` or `albay` only)
-- Rate limiting on `POST /api/record` (10 requests/minute per IP)
-- Stats endpoint uses optimized combined queries
-- Prompt fallback correctly returns any dialect when requested dialect has no prompts
-
 ---
 
 ## Background
