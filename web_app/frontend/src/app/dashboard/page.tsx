@@ -110,7 +110,6 @@ export default function DashboardPage() {
     if (newFiles.length === 0) return;
     setSelectedFiles(prev => [...prev, ...newFiles]);
     setFileNames(prev => [...prev, ...newFiles.map(f => f.name)]);
-    setSubmitted(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
