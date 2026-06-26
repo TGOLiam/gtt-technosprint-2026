@@ -1,44 +1,60 @@
-import { DashboardStats, Recording, Region, SentenceItem } from "./types";
+// ---------------------------------------------------------------------------
+// API LAYER
+// ---------------------------------------------------------------------------
+// Right now USE_MOCK = true, so the whole frontend runs standalone with fake
+// data — good for demoing tonight even if the backend isn't ready.
+//
+// HOW TO WIRE UP THE REAL BACKEND:
+// 1. Set NEXT_PUBLIC_API_URL in .env.local to your FastAPI base URL.
+// 2. Set USE_MOCK = false below.
+// 3. Each function already has the real fetch() call written — just confirm
+//    the request/response shapes match your FastAPI routes (see comments).
+// ---------------------------------------------------------------------------
 
-const USE_MOCK = false;
+import {
+  MOCK_DASHBOARD_STATS,
+  MOCK_LEADERBOARD,
+  MOCK_PIPELINE_RUN,
+  MOCK_RECORDINGS,
+  MOCK_SENTENCES,
+} from "./mock-data";
+import {
+  DashboardStats,
+  LeaderboardEntry,
+  PipelineRun,
+  Recording,
+  Region,
+  SentenceItem,
+} from "./types";
+
+const USE_MOCK = true;
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// GET /api/prompt?dialect=naga|albay
-export async function getSentences(region?: Region): Promise<SentenceItem[]> {
-  if (USE_MOCK) {
-    const { MOCK_SENTENCES } = await import("./mock-data");
-    return MOCK_SENTENCES;
-  }
-
-  const params = region ? `?dialect=${region}` : "";
-  const res = await fetch(`${API_URL}/api/prompt${params}`);
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to fetch sentences (${res.status}): ${text}`);
-  }
-  const data = await res.json();
-
-  return [
-    {
-      id: data.id,
-      text: data.text,
-      translation: tagline(data.dialect_variant),
-      difficulty: "easy",
-    },
-  ];
+function sleep(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
 }
 
-// POST /api/record  (multipart: audio + prompt_id + speaker_id + dialect_label)
+// GET /sentences?region=naga|albay
+export async function getSentences(region?: Region): Promise<SentenceItem[]> {
+  if (USE_MOCK) {
+    await sleep(300);
+    return MOCK_SENTENCES;
+  }
+  const res = await fetch(`${API_URL}/sentences${region ? `?region=${region}` : ""}`);
+  if (!res.ok) throw new Error("Failed to fetch sentences");
+  return res.json();
+}
+
+// POST /recordings  (multipart: audio file + sentence_id + user_id)
+// Expected response: Recording shape including transcript + similarity_score
+// from the Whisper validation step.
 export async function submitRecording(params: {
   sentenceId: string;
   userId: string;
   audioBlob: Blob;
-  dialectLabel: Region;
 }): Promise<Recording> {
   if (USE_MOCK) {
-    const { MOCK_SENTENCES } = await import("./mock-data");
-    await new Promise((r) => setTimeout(r, 800));
+    await sleep(1200);
     const expected = MOCK_SENTENCES.find((s) => s.id === params.sentenceId);
     return {
       id: `r-${Date.now()}`,
@@ -51,77 +67,132 @@ export async function submitRecording(params: {
       created_at: new Date().toISOString(),
     };
   }
-
   const form = new FormData();
   form.append("audio", params.audioBlob, "recording.webm");
-  form.append("prompt_id", params.sentenceId);
-  form.append("speaker_id", params.userId);
-  form.append("dialect_label", params.dialectLabel);
-  form.append("consent_granted", "true");
+  form.append("sentence_id", params.sentenceId);
+  form.append("user_id", params.userId);
 
-  const res = await fetch(`${API_URL}/api/record`, { method: "POST", body: form });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to submit recording (${res.status}): ${text}`);
-  }
-  const data = await res.json();
-
-  return {
-    id: data.recording_id,
-    user_id: data.speaker_id,
-    sentence_id: params.sentenceId,
-    audio_url: "",
-    transcript: "",
-    similarity_score: 95,
-    status: "accepted",
-    created_at: new Date().toISOString(),
-  };
+  const res = await fetch(`${API_URL}/recordings`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error("Failed to submit recording");
+  return res.json();
 }
 
-// GET /api/stats
-export async function getDashboardStats(): Promise<DashboardStats> {
-  if (USE_MOCK) {
-    const { MOCK_DASHBOARD_STATS } = await import("./mock-data");
-    await new Promise((r) => setTimeout(r, 300));
-    return MOCK_DASHBOARD_STATS;
-  }
-
-  const res = await fetch(`${API_URL}/api/stats`);
-  if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-  const data = await res.json();
-
-  return {
-    total_recordings: data.total_recordings,
-    native_contributors: data.total_speakers,
-    average_quality: 95,
-    hours_collected: Number((data.total_duration_minutes / 60).toFixed(2)),
-  };
-}
-
-// GET /api/stats (reuse for recordings)
+// GET /recordings  -> recent accepted recordings for the Dataset page
 export async function getRecordings(): Promise<Recording[]> {
   if (USE_MOCK) {
-    const { MOCK_RECORDINGS } = await import("./mock-data");
-    await new Promise((r) => setTimeout(r, 300));
+    await sleep(300);
     return MOCK_RECORDINGS;
   }
-  return [];
+  const res = await fetch(`${API_URL}/recordings`);
+  if (!res.ok) throw new Error("Failed to fetch recordings");
+  return res.json();
 }
 
-// Not yet implemented on backend
-export async function getLeaderboard() {
-  const { MOCK_LEADERBOARD } = await import("./mock-data");
-  await new Promise((r) => setTimeout(r, 300));
-  return MOCK_LEADERBOARD;
+// GET /dashboard/stats
+export async function getDashboardStats(): Promise<DashboardStats> {
+  if (USE_MOCK) {
+    await sleep(300);
+    return MOCK_DASHBOARD_STATS;
+  }
+  const res = await fetch(`${API_URL}/dashboard/stats`);
+  if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+  return res.json();
 }
 
-// Not yet implemented on backend
+// GET /leaderboard
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  if (USE_MOCK) {
+    await sleep(300);
+    return MOCK_LEADERBOARD;
+  }
+  const res = await fetch(`${API_URL}/leaderboard`);
+  if (!res.ok) throw new Error("Failed to fetch leaderboard");
+  return res.json();
+}
+
+// GET /dataset/export -> triggers file download of the dataset (CSV/JSON/zip)
 export function getExportUrl(): string {
-  return `${API_URL}/api/stats`;
+  return `${API_URL}/dataset/export`;
 }
 
-function tagline(dialect: string): string {
-  if (dialect === "naga") return "Naga / Coastal Bikol";
-  if (dialect === "albay") return "Albay / Inland Bikol";
-  return "Bikol";
+// ---------------------------------------------------------------------------
+// PIPELINE (the GUI front-end for the "Bikol Speech Preprocessing Pipeline"
+// CLI tool, normally run via `run.bat <input_dir> <output_dir>`).
+//
+// Backend contract assumed:
+//   POST /pipeline/run   multipart: file, source_name?, source_type?, dialect?
+//     -> { run_id, status: "queued" }
+//   GET  /pipeline/run/{run_id}
+//     -> PipelineRun  (poll this every ~1.5s while status is queued/running)
+//
+// This should call the SAME underlying pipeline code the CLI uses, so a
+// file run through the GUI produces an identical manifest.csv / rejected.csv
+// / pipeline.log as running run.bat directly.
+// ---------------------------------------------------------------------------
+
+let mockRunStep = 0;
+
+// POST /pipeline/run
+export async function startPipelineRun(params: {
+  file: File;
+  sourceName?: string;
+  sourceType?: string;
+  dialect?: Region;
+}): Promise<{ run_id: string }> {
+  if (USE_MOCK) {
+    await sleep(400);
+    mockRunStep = 0;
+    return { run_id: "run-demo-1" };
+  }
+  const form = new FormData();
+  form.append("file", params.file);
+  if (params.sourceName) form.append("source_name", params.sourceName);
+  if (params.sourceType) form.append("source_type", params.sourceType);
+  if (params.dialect) form.append("dialect", params.dialect);
+
+  const res = await fetch(`${API_URL}/pipeline/run`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error("Failed to start pipeline run");
+  return res.json();
+}
+
+// GET /pipeline/run/{run_id} — poll this on an interval until status is
+// "done" or "failed". The mock implementation advances one stage per call
+// so polling visibly progresses through normalize -> segment -> classify.
+export async function getPipelineRun(runId: string): Promise<PipelineRun> {
+  if (USE_MOCK) {
+    await sleep(500);
+    mockRunStep = Math.min(mockRunStep + 1, 4);
+
+    const stages = MOCK_PIPELINE_RUN.file.stages.map((s, i) => ({
+      ...s,
+      status:
+        mockRunStep > i ? ("done" as const) : i === mockRunStep ? ("running" as const) : ("pending" as const),
+    }));
+
+    const isDone = mockRunStep >= 4;
+
+    return {
+      ...MOCK_PIPELINE_RUN,
+      run_id: runId,
+      status: isDone ? "done" : "running",
+      file: {
+        ...MOCK_PIPELINE_RUN.file,
+        stages,
+        segments: isDone ? MOCK_PIPELINE_RUN.file.segments : [],
+        result: isDone ? "done" : "running",
+      },
+      output_log: isDone
+        ? MOCK_PIPELINE_RUN.output_log
+        : MOCK_PIPELINE_RUN.output_log.slice(0, 4 + mockRunStep * 2),
+    };
+  }
+  const res = await fetch(`${API_URL}/pipeline/run/${runId}`);
+  if (!res.ok) throw new Error("Failed to fetch pipeline run status");
+  return res.json();
 }
