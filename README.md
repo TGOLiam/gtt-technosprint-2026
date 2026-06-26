@@ -12,41 +12,24 @@ python tinigbicol.py serve                                # start the dashboard
 ---
 
 ## How It Works
-web_app/backend/data/input/       ← raw audio from app + manifest.yml
 
-↓
-
-Stage 1 ─── NORMALIZE
-
-ffmpeg → 16kHz mono WAV. Any format accepted.
-
-↓
-
-Stage 2 ─── SEGMENT
-
-Hard-cut into 10s chunks. Silent/unlabeled noise discarded.
-
-↓
-
-Stage 3 ─── CLASSIFY
-
-MMS-LID-256 predicts language. Philippine speech kept,
-
-non-PH speech rejected.
-
-↓
-
-web_app/backend/data/audio/
-
-├── naga_00001.wav                ← kept segments
-
-├── rejected/eng_00015.wav        ← rejected segments
-
-├── manifest.csv                  ← metadata: your label + model prediction
-
-├── rejected.csv
-
-└── pipeline.log                  ← full provenance (JSONL)
+```
+Input:  my_audio/ + manifest.yml
+           │
+Stage 1 ─── NORMALIZE — ffmpeg converts any format to 16kHz mono WAV
+           │
+Stage 2 ─── SEGMENT   — hard-cut into 10s chunks; silence discarded
+           │
+Stage 3 ─── CLASSIFY  — MMS-LID-256 predicts language;
+           │            Philippine speech kept, non-PH rejected
+           ▼
+Output:  my_output/
+         ├── audio/naga_00001.wav      ← kept segments
+         ├── rejected/eng_00015.wav    ← rejected segments
+         ├── manifest.csv              ← metadata: your label + model prediction
+         ├── rejected.csv
+         └── pipeline.log              ← full provenance (JSONL)
+```
 
 Each segment in `manifest.csv` carries two signals:
 
