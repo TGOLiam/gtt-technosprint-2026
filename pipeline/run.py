@@ -105,6 +105,7 @@ def main():
         file_langs: dict[str, int] = defaultdict(int)
         counter = f"[{i}/{total}]"
         norm_str = seg_str = result_str = ""
+        file_kept = file_rejected = 0
 
         # Stage 1
         wav = normalize(entry["_input_path"], basename, temp_dir)
