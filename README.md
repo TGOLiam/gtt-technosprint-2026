@@ -4,6 +4,11 @@ Despite being spoken by millions across the Bicol Region, Bikol remains almost e
 
 TinigBicol transforms raw Bikol-language audio and video into structured, annotated speech segments — ready for ASR research, dialect study, and dataset construction. Drop a folder of audio files and a `manifest.yml` — get standardized 16kHz WAV segments with language annotation and structured metadata back.
 
+```bash
+python tinigbicol.py pipeline <input_dir> <output_dir>   # run the pipeline
+python tinigbicol.py serve                                # start the dashboard
+```
+
 ---
 
 ## How It Works
@@ -95,8 +100,7 @@ See `testing/test_input/manifest.yml` for a full example with all options.
 python -m pip install -r pipeline/requirements.txt
 
 # Run the full pipeline
-./run.bat my_audio/ my_output/         # Windows
-./run.sh my_audio/ my_output/          # Mac/Linux
+python tinigbicol.py pipeline my_audio/ my_output/
 ```
 
 First run downloads MMS-LID-256 (~3.9 GB, cached thereafter). GPU is auto-detected. On CPU, expect 5–15s per 10s segment.
@@ -107,7 +111,7 @@ If your machine lacks a GPU, offload Stage 3 to Colab's free T4:
 
 ```bash
 # Run stages 1–2 locally (fast, CPU-friendly)
-./run.bat my_audio/ my_output/ --skip-classify
+python tinigbicol.py pipeline my_audio/ my_output/ --skip-classify
 
 # Then:
 # 1. Zip the WAVs: zip -r audio.zip my_output/audio/
@@ -123,61 +127,44 @@ Colab processes ~100× faster than CPU and requires no local ML dependencies.
 Run only stages 1–2 (normalize + segment) without any language classification:
 
 ```bash
-./run.bat my_audio/ my_output/ --skip-classify
+python tinigbicol.py pipeline my_audio/ my_output/ --skip-classify
 ```
 
 ---
 
 ## Project Layout
-├── pipeline/              # The CLI tool
 
-│   ├── run.py             # Entry point
+```sh
+tinigbicol.py             # Centralized entry point (pipeline | serve)
 
+pipeline/                 # The CLI tool
+│   ├── run.py             # Pipeline entry point
 │   ├── normalize.py       # Stage 1: ffmpeg
-
 │   ├── segment.py         # Stage 2: hard-cut
-
 │   ├── validate.py        # Stage 3: MMS-LID
-
 │   ├── manifest.py        # Parse manifest.yml
-
 │   ├── output.py          # Write CSVs + log
-
 │   ├── config.py          # Defaults
-
 │   └── requirements.txt
-
 │
-
 ├── testing/               # Sample input/output
-
 │   ├── test_input/
-
 │   │   └── manifest.yml   # Sample config
-
 │   └── test_output/
-
 │
-
 ├── web_app/               # Community recording app
-
 │   ├── backend/           # FastAPI + SQLite (port 8000)
-
 │   │   └── data/
-
 │   │       ├── input/     # Raw audio uploads + manifest.yml (auto-generated)
-
 │   │       └── audio/     # Pipeline output WAVs
-
 │   └── frontend/          # Next.js + Tailwind (port 3000)
-
 │
-
-├── run.sh / run.bat       # Cross-platform launcher
-
+├── run.sh / run.bat       # Cross-platform pipeline launcher (thin wrappers)
+│
 ├── pipeline_architecture.md
-
+│
 └── README.md
+```
 
 ---
 
@@ -192,18 +179,18 @@ A community recording interface that feeds directly into the pipeline. Users sel
 cd web_app/backend && python -m pip install -r requirements.txt
 cd web_app/frontend && npm install
 
-# Terminal 1 — backend
-cd web_app/backend && python -m uvicorn app.main:app --reload --port 8000
-
-# Terminal 2 — frontend
-cd web_app/frontend && npm run dev
+# Start both servers
+cd ../.. && python tinigbicol.py serve
 ```
+
+Backend: http://localhost:8000  |  Frontend: http://localhost:3000
+
+Ctrl+C stops both servers.
 
 Or use the Makefile:
 
 ```bash
-make dev-backend   # Terminal 1
-make dev-frontend  # Terminal 2
+make dev
 ```
 
 | Endpoint | Description |
@@ -230,7 +217,7 @@ Entry auto-appended to data/input/manifest.yml
 
 ↓
 
-Pipeline: ./run.bat data/input/ data/audio/
+Pipeline: python tinigbicol.py pipeline data/input/ data/audio/
 
 ### Backend Improvements
 
