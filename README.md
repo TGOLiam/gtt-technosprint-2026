@@ -60,6 +60,7 @@ output lets you decide whose signal to trust.
 
 - Python 3.11+
 - ffmpeg
+- Cuda-Compatible GPUs (Optional)
 
 ### 1. Use Your Own Audio
 
