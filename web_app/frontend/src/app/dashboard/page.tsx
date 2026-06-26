@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [dialect, setDialect] = useState<Region>("albay");
   const [fileName, setFileName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   // Resume from sessionStorage first (survives page navigation),
   // then fall back to URL query param (for links / bookmarks).
@@ -61,6 +62,7 @@ export default function DashboardPage() {
     if (!file) return;
     setSelectedFile(file);
     setFileName(file.name);
+    setSubmitted(false);
   }
 
   async function handleStart() {
@@ -70,6 +72,11 @@ export default function DashboardPage() {
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
     }
+  }
+
+  function handleSubmit() {
+    if (!selectedFile) return;
+    setSubmitted(true);
   }
 
   return (
@@ -180,6 +187,20 @@ export default function DashboardPage() {
                         </div>
                       </dl>
                     </div>
+                    {!submitted ? (
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={!selectedFile}
+                        className="mt-4 w-full"
+                        size="sm"
+                      >
+                        Submit
+                      </Button>
+                    ) : (
+                      <p className="mt-4 text-center text-sm font-medium text-leaf">
+                        ✓ File ready
+                      </p>
+                    )}
                   </>
                 )}
               </Card>
