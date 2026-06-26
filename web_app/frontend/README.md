@@ -47,7 +47,7 @@ even before the backend is wired up.
 | `/select-region` | Nickname + Naga/Albay region picker |
 | `/record` | Sentence display, record/stop/replay/submit, Whisper validation result |
 | `/dataset` | Table of accepted recordings + export (no longer linked from nav/home, still works) |
-| `/dashboard` | **Pipeline GUI** — upload an audio file, runs it through the Bikol Speech Preprocessing Pipeline (normalize -> segment -> classify), same backend logic as `run.bat`. Polls every 1.5s for progress. |
+| `/dashboard` | **Pipeline GUI** — upload an audio file, runs it through the Bikol Speech Preprocessing Pipeline (normalize -> segment -> classify), same backend logic as `python tinigbicol.py pipeline`. Polls every 1.5s for progress. |
 | `/about` | Problem statement, solution, tech stack |
 
 ### Pipeline GUI backend contract (`/dashboard`)
@@ -60,7 +60,7 @@ GET  /pipeline/run/{run_id}
   -> PipelineRun (see src/lib/types.ts) — poll until status is "done"/"failed"
 ```
 
-This should invoke the *same* pipeline code the CLI (`run.bat`) uses, so a
+This should invoke the *same* pipeline code the CLI (`python tinigbicol.py pipeline`) uses, so a
 file processed through the GUI produces an identical `manifest.csv` /
 `rejected.csv` / `pipeline.log` as running the CLI directly.
 

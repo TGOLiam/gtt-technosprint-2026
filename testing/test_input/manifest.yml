@@ -2,7 +2,7 @@
 # Drop your audio/video files in this directory, list them below,
 # then run:
 #
-#    ./pipeline/run.sh testing/test_input/ testing/test_output/
+#    python tinigbicol.py pipeline testing/test_input/ testing/test_output/
 #
 # ────────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ files:
   #   dialect_label: albay
   #   confidence: inferred
   #   source_type: field_recording
-  - path: nba.m4a
-    dialect_label: albay
-    source_name: nba
-    source_type: manual
+  # - path: nba.m4a
+  #   dialect_label: albay
+  #   source_name: nba
+  #   source_type: manual

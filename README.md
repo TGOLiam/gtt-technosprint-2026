@@ -151,8 +151,6 @@ pipeline/                 # The CLI tool
 │   │       └── audio/     # Pipeline output WAVs
 │   └── frontend/          # Next.js + Tailwind (port 3000)
 │
-├── run.sh / run.bat       # Cross-platform pipeline launcher (thin wrappers)
-│
 ├── pipeline_architecture.md
 │
 └── README.md
