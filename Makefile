@@ -1,4 +1,4 @@
-.PHONY: install dev test build clean
+.PHONY: install dev dev-backend dev-frontend test build clean
 
 FRONTEND_DIR=web_app/frontend
 BACKEND_DIR=web_app/backend
@@ -7,10 +7,16 @@ install:
 	cd $(FRONTEND_DIR) && npm install
 	cd $(BACKEND_DIR) && pip install -r requirements.txt
 
+dev-backend:
+	cd $(BACKEND_DIR) && uvicorn app.main:app --reload --port 8000
+
+dev-frontend:
+	cd $(FRONTEND_DIR) && npm run dev
+
 dev:
 	trap 'kill 0' EXIT; \
-		cd $(BACKEND_DIR) && uvicorn app.main:app --reload --port 8000 & \
-		cd $(FRONTEND_DIR) && npm run dev
+		$(MAKE) dev-backend & \
+		$(MAKE) dev-frontend
 
 test:
 	cd $(BACKEND_DIR) && pytest -xvs

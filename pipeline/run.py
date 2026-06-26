@@ -2,6 +2,8 @@ import argparse
 import shutil
 import sys
 import tempfile
+import time
+from collections import defaultdict
 from pathlib import Path
 
 from pipeline.config import MODEL_CACHE_DIR
@@ -10,6 +12,18 @@ from pipeline.normalize import normalize
 from pipeline.output import OutputWriter
 from pipeline.segment import get_duration_ms, segment
 
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+CYAN = "\033[96m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+RESET = "\033[0m"
+
+
+def _fmt(s, color):
+    return f"{color}{s}{RESET}"
+
 
 def main():
     parser = argparse.ArgumentParser(description="Bikol Speech Preprocessing Pipeline")
@@ -17,7 +31,7 @@ def main():
     parser.add_argument("output_dir", type=Path, help="Directory to write output")
     parser.add_argument("--skip-classify", action="store_true", help="Skip Stage 3 (language classification)")
     parser.add_argument("--keep-temp", action="store_true", help="Keep temporary files for debugging")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Print per-file progress")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show per-segment classification results")
     args = parser.parse_args()
 
     input_dir = args.input_dir.resolve()
@@ -34,120 +48,165 @@ def main():
     entries = load_manifest(input_dir)
     temp_dir = Path(tempfile.mkdtemp(prefix="pipeline_"))
     output = OutputWriter(output_dir)
-
     total = len(entries)
-    print(f"\n{'='*50}")
-    print(f"  Bikol Speech Preprocessing Pipeline")
-    print(f"{'='*50}")
-    print(f"\nInput files: {total}")
+    start = time.time()
 
-    # --- Stage 1: Normalize ---
-    norm_ok = 0
-    norm_fail = 0
-    normalized = []
+    print(f"\n  {_fmt(input_dir.name + '/', BOLD)}→ {total} file{'s' if total != 1 else ''}")
+    print(f"  {_fmt('─' * 66, DIM)}")
+    print()
 
-    for i, entry in enumerate(entries):
+    norm_ok = norm_fail = 0
+    seg_files = seg_count = 0
+    kept = rejected = 0
+    reject_reasons: dict[str, int] = defaultdict(int)
+
+    model = None
+    if not args.skip_classify:
+        from pipeline.validate import load_model, classify
+        model = load_model(MODEL_CACHE_DIR)
         if args.verbose:
-            print(f"  [{i+1}/{total}] {entry['_basename']} — normalizing...")
-        wav = normalize(entry["_input_path"], entry["_basename"], temp_dir)
+            print()
+
+    for entry in entries:
+        basename = entry["_basename"]
+        norm_status = seg_status = classify_status = ""
+        file_kept = file_rejected = 0
+        file_langs: dict[str, int] = defaultdict(int)
+
+        # ── Stage 1: Normalize ──
+        wav = normalize(entry["_input_path"], basename, temp_dir)
         if wav:
-            normalized.append((entry, wav))
             norm_ok += 1
-            output.log("normalize", entry["_basename"], "ok", output=str(wav))
+            norm_status = _fmt("norm", GREEN)
         else:
             norm_fail += 1
-            output.log("normalize", entry["_basename"], "fail", error="ffmpeg_fail")
+            norm_status = _fmt("norm", RED)
+            output.log("normalize", basename, "fail", error="ffmpeg_fail")
+            line = f"  {basename:<28s}  {norm_status:<6s}  {_fmt('failed', RED)}"
+            print(line)
+            continue
 
-    print(f"  Stage 1 (normalize):    {norm_ok} ok, {norm_fail} failed")
+        output.log("normalize", basename, "ok", output=str(wav))
 
-    # --- Stage 2: Segment ---
-    seg_count = 0
-    segments = []
-
-    for entry, wav in normalized:
+        # ── Stage 2: Segment ──
         seg_config = entry.get("segment", {})
         segs = segment(wav, seg_config, temp_dir)
-
-        if args.verbose:
-            print(f"  {entry['_basename']} → {len(segs)} segments")
-
-        for seg in segs:
-            segments.append((entry, seg))
-            seg_count += 1
-
-        output.log("segment", entry["_basename"], "ok",
+        output.log("segment", basename, "ok",
                    input_duration_ms=get_duration_ms(wav),
                    segments=len(segs))
 
-    print(f"  Stage 2 (segment):     {seg_count} segments")
+        if not segs:
+            seg_status = _fmt("seg", YELLOW)
+            line = f"  {basename:<28s}  {norm_status:<6s}  {seg_status:<8s}  {_fmt('no segments', YELLOW)}"
+            print(line)
+            continue
 
-    # --- Stage 3: Classify ---
-    kept = 0
-    rejected = 0
+        seg_files += 1
+        seg_count += len(segs)
+        seg_status = _fmt(f"seg({len(segs)})", GREEN)
 
-    if args.skip_classify:
-        print(f"  Stage 3 (classify):    SKIPPED (--skip-classify)")
-        print(f"\n  Tip: Run classification in Colab:\n"
-              f"    → Open pipeline/validate.ipynb\n"
-              f"    → Upload {output_dir}/audio/ as a zip\n"
-              f"    → Runtime → Run All")
-    elif segments:
-        print(f"  Stage 3 (classify):    loading model...")
-        from pipeline.validate import load_model, classify
-
-        model = load_model(MODEL_CACHE_DIR)
-
-        reject_reasons = {}
-        for entry, seg in segments:
-            result = classify(model, seg)
-            dur = get_duration_ms(seg)
-
-            if result["is_ph"]:
-                output.add_row(entry, seg, result["lang"], result["score"], dur)
+        # ── Stage 3: Classify ──
+        if args.skip_classify:
+            for seg in segs:
+                dur = get_duration_ms(seg)
+                output.add_row(entry, seg, "", 0.0, dur)
                 kept += 1
+            classify_status = _fmt("skip-classify", YELLOW)
+        else:
+            for seg in segs:
+                result = classify(model, seg)
+                dur = get_duration_ms(seg)
+                file_langs[result["lang"]] += 1
+
+                if result["is_ph"]:
+                    output.add_row(entry, seg, result["lang"], result["score"], dur)
+                    file_kept += 1
+                else:
+                    lang = result["lang"] or "unknown"
+                    reason = "lid_error" if not result["lang"] else "not_ph_language"
+                    reject_reasons[reason] += 1
+                    output.add_rejected_row(entry, seg, reason,
+                                            lang=result["lang"],
+                                            score=result["score"],
+                                            duration_ms=dur)
+                    file_rejected += 1
+
+                output.log("classify", seg.stem, "keep" if result["is_ph"] else "reject",
+                           lang=result["lang"], score=result["score"])
+
+                if args.verbose:
+                    status = _fmt("✓", GREEN) if result["is_ph"] else _fmt("✗", RED)
+                    lang_str = result["lang"] or "?"
+                    print(f"  {'':28s}  {'':6s}  {'':8s}  {status}  {lang_str}  ({result['score']:.3f})")
+
+            kept += file_kept
+            rejected += file_rejected
+
+            if file_kept > 0 and file_rejected == 0:
+                top_lang = max(file_langs, key=file_langs.get) if file_langs else ""
+                classify_status = _fmt(f"{file_kept} kept", GREEN)
+                if top_lang:
+                    classify_status += f"  ({top_lang})"
+            elif file_rejected > 0 and file_kept == 0:
+                classify_status = _fmt(f"{file_rejected} rejected", RED)
             else:
-                lang = result["lang"] or "unknown"
-                reason = "lid_error" if not result["lang"] else f"not_ph_language"
-                reject_reasons[reason] = reject_reasons.get(reason, 0) + 1
-                output.add_rejected_row(entry, seg, reason,
-                                        lang=result["lang"],
-                                        score=result["score"],
-                                        duration_ms=dur)
-                rejected += 1
+                classify_status = f"{_fmt(str(file_kept) + ' kept', GREEN)} / {_fmt(str(file_rejected) + ' rejected', RED)}"
 
-            output.log("classify", seg.stem, "keep" if result["is_ph"] else "reject",
-                       lang=result["lang"], score=result["score"])
+        # ── Print per-file line ──
+        line = f"  {basename:<28s}  {norm_status:<6s}  {seg_status:<10s}  {classify_status}"
+        print(line)
 
-            if args.verbose:
-                status = "\u2713" if result["is_ph"] else "\u2717"
-                lang_str = result["lang"] or "?"
-                print(f"  {status} {seg.stem}: {lang_str} ({result['score']:.3f})")
+    # ── Summary ──
+    print()
+    print(f"  {_fmt('─' * 66, DIM)}")
 
-        print(f"  Stage 3 (classify):    {kept} kept, {rejected} rejected")
+    norm_line = f"  normalize    {_fmt(f'{norm_ok} ok', GREEN)}    {_fmt(f'{norm_fail} fail', RED) if norm_fail else _fmt('0 fail', DIM)}"
+    print(norm_line)
 
+    seg_line = f"  segment      {seg_files} files  →  {seg_count} segment{'s' if seg_count != 1 else ''}"
+    print(seg_line)
+
+    if not args.skip_classify:
+        cls_line = f"  classify     {_fmt(f'{kept} kept', GREEN)}    {_fmt(f'{rejected} rejected', RED) if rejected else _fmt('0 rejected', DIM)}"
+        print(cls_line)
         if reject_reasons:
-            print(f"\n  Reject reasons:")
             for reason, count in sorted(reject_reasons.items(), key=lambda x: -x[1]):
-                print(f"    {reason:20s}: {count}")
+                print(f"    {reason:<20s}  {count}")
+    else:
+        print(f"  classify     {_fmt('skipped (--skip-classify)', YELLOW)}")
 
-    # --- Write outputs ---
-    output.write()
+    # ── Footer ──
+    elapsed = time.time() - start
+    if elapsed >= 60:
+        elapsed_str = f"{int(elapsed // 60)}m {int(elapsed % 60)}s"
+    else:
+        elapsed_str = f"{elapsed:.1f}s"
 
-    print(f"\nOutput:")
-    print(f"  {output_dir}/audio/     : {kept} segments")
-    if rejected:
-        print(f"  {output_dir}/rejected/  : {rejected} segments")
-    if output._manifest_rows:
-        print(f"  {output_dir}/manifest.csv  : {len(output._manifest_rows)} rows")
-    if output._rejected_rows:
-        print(f"  {output_dir}/rejected.csv  : {len(output._rejected_rows)} rows")
-    if output._log_path.exists():
-        print(f"  {output_dir}/pipeline.log   : {output._log_path.stat().st_size} bytes")
+    device = ""
+    if not args.skip_classify:
+        try:
+            import torch
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+        except ImportError:
+            device = "?"
+
+    print()
+    print(f"  runtime      {elapsed_str}", end="")
+    if device:
+        print(f"  |  {device.upper()}")
+    else:
+        print()
+    print(f"  output       {output_dir}/")
+    print(f"  {_fmt('─' * 66, DIM)}")
+    print()
 
     if not args.keep_temp:
         shutil.rmtree(temp_dir, ignore_errors=True)
-
-    print(f"\nDone.")
 
 
 if __name__ == "__main__":

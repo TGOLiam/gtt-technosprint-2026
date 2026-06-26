@@ -25,3 +25,7 @@ files:
   #   dialect_label: albay
   #   confidence: inferred
   #   source_type: field_recording
+  - path: nba.m4a
+    dialect_label: albay
+    source_name: nba
+    source_type: manual
