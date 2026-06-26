@@ -33,12 +33,16 @@ export default function AboutPage() {
               <Database size={18} className="text-maroon" /> Our solution
             </h2>
             <p className="mt-3 text-ink-soft leading-relaxed">
-              TinigBicol is an open-source platform where native Bicolano
-              speakers contribute voice recordings by reading prompted
-              sentences. Each recording is automatically validated against
-              Whisper speech-to-text, then stored in a structured, open
-              dataset that researchers can use to train speech AI models —
-              starting with the Naga (western) and Albay (eastern) accents.
+
+              TinigBicol is a community-powered platform that helps preserve and advance the Bicolano language 
+              by collecting high-quality voice recordings from native speakers. Every contribution is automatically
+               processed through our speech preprocessing pipeline, where audio is normalized, segmented, and 
+               language-validated before being transformed into structured datasets. In addition, our dashboard 
+               allows users to upload audio files directly and process them through the same pipeline, functioning 
+               as a data cleaning tool for preparing speech data. By making speech data collection and processing 
+               simple and accessible, TinigBicol empowers researchers, educators, and AI developers to build the 
+               first open-source Bicolano speech resources for future language technologies.
+
             </p>
           </Card>
 
@@ -51,10 +55,10 @@ export default function AboutPage() {
                 "Next.js",
                 "Tailwind CSS",
                 "FastAPI",
-                "Supabase",
-                "Whisper API",
-                "Vercel",
-                "Render",
+                "TypeScript",
+                "Python",
+                "FFmpeg",
+                
               ].map((tech) => (
                 <span
                   key={tech}

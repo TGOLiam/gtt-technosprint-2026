@@ -27,69 +27,36 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-soft">
-            Read a sentence. Record your voice. In seconds, an open dataset
-            grows — built by native speakers, for the researchers and
-            AI developers building the next generation of Bicolano speech
-            technology.
+            A speech data preparation tool that cleans, validates, and structures raw Bikol audio into high-quality datasets for future speech recognition and language technology projects. 
+
           </p>
 
+
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/select-region">
-              <Button size="lg" variant="primary">
-                <Mic size={20} /> Start Contributing
-              </Button>
-            </Link>
             <Link href="/dashboard">
               <Button size="lg" variant="secondary">
                 <LayoutDashboard size={20} /> Dashboard
               </Button>
             </Link>
+
+            <Link href="/select-region">
+              <Button size="lg" variant="primary">
+                <Mic size={20} /> Recording
+              </Button>
+            </Link>
+
             <Link href="/about">
               <Button size="lg" variant="outline">
                 <Info size={20} /> About
               </Button>
             </Link>
           </div>
+
+
+
         </section>
 
-        {/* Signature element: live "sentence card" preview, the heart of the product */}
-        <section className="mx-auto max-w-3xl px-6 pb-20">
-          <div className="rounded-3xl border-2 border-ink/10 bg-white/80 p-8 shadow-[6px_6px_0_0_rgba(107,30,35,0.12)] sm:p-10">
-            <div className="flex items-center justify-between">
-              <span className="font-display text-sm font-bold uppercase tracking-wide text-ink-soft">
-                Sentence #1
-              </span>
-              <span className="rounded-full bg-leaf/10 px-3 py-1 text-xs font-semibold text-leaf">
-                98% match
-              </span>
-            </div>
-            <p className="font-display mt-4 text-3xl font-bold text-ink sm:text-4xl">
-              &ldquo;Marhay na aga.&rdquo;
-            </p>
-            <p className="mt-2 text-sm text-ink-soft">Good morning.</p>
-
-            <div className="mt-8 flex items-center gap-4">
-              <span className="recording-pulse flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-maroon text-cream">
-                <Mic size={22} />
-              </span>
-              <div className="flex items-end gap-1 h-8">
-                {[40, 70, 45, 90, 60, 35, 80, 50, 65, 30].map((h, i) => (
-                  <span
-                    key={i}
-                    className="w-1.5 rounded-full bg-marigold"
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
-              </div>
-              <ArrowRight className="ml-auto text-ink-soft" size={20} />
-              <span className="text-sm font-semibold text-leaf">Accepted</span>
-            </div>
-          </div>
-          <p className="mt-4 text-center text-sm text-ink-soft">
-            Every recording is checked against Whisper speech-to-text before
-            it joins the dataset.
-          </p>
-        </section>
+        
       </main>
     </>
   );

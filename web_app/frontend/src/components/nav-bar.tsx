@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import { Mic } from "lucide-react";
 
 const links = [
-  { href: "/record", label: "Record" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/record", label: "Record" },
   { href: "/about", label: "About" },
 ];
 
