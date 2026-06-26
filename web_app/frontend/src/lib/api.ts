@@ -148,6 +148,11 @@ export function getExportUrl(): string {
   return `${API_URL}/dataset/export`;
 }
 
+// GET /api/pipeline/{run_id}/download -> download pipeline output as zip
+export function getPipelineDownloadUrl(runId: string): string {
+  return `${API_URL}/api/pipeline/${runId}/download`;
+}
+
 // ---------------------------------------------------------------------------
 // PIPELINE (the GUI front-end for the "Bikol Speech Preprocessing Pipeline"
 // CLI tool, normally run via `run.bat <input_dir> <output_dir>`).

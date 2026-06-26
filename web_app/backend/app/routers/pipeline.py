@@ -1,12 +1,15 @@
 import csv
+import io
 import json
 import shutil
 import subprocess
 import threading
 import time
 import uuid
+import zipfile
 from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(tags=["pipeline"])
 
@@ -267,3 +270,24 @@ async def get_pipeline_run(run_id: str):
         }
 
     return _build_run_response(run_id, run_info)
+
+
+@router.get("/api/pipeline/{run_id}/download")
+async def download_pipeline_output(run_id: str):
+    output_dir = DATA_DIR / "output" / run_id
+    if not output_dir.exists():
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in output_dir.rglob("*"):
+            if path.is_file():
+                arcname = str(path.relative_to(output_dir))
+                zf.write(path, arcname)
+
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="pipeline_{run_id}.zip"'},
+    )

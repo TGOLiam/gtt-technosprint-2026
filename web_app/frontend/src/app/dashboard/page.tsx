@@ -10,6 +10,7 @@ import { usePipelinePolling } from "@/lib/use-pipeline-polling";
 import { Region } from "@/lib/types";
 import {
   Upload,
+  Download,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -17,6 +18,7 @@ import {
   FileAudio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getPipelineDownloadUrl } from "@/lib/api";
 
 const REGIONS: Region[] = ["naga", "albay"];
 
@@ -40,6 +42,7 @@ export default function DashboardPage() {
   const [sourceType, setSourceType] = useState("");
   const [dialect, setDialect] = useState<Region>("albay");
   const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (runIdFromUrl && !hasResumed.current) {
@@ -57,9 +60,14 @@ export default function DashboardPage() {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
     setFileName(file.name);
+  }
+
+  async function handleSubmit() {
+    if (!selectedFile) return;
     hasResumed.current = true;
-    const runId = await start({ file, sourceName, sourceType, dialect });
+    const runId = await start({ file: selectedFile, sourceName, sourceType, dialect });
     if (runId) {
       router.push(`/dashboard?run_id=${runId}`);
     }
@@ -149,29 +157,39 @@ export default function DashboardPage() {
                 </div>
 
                 {fileName && (
-                  <div className="mt-5 border-t-2 border-ink/10 pt-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                      File Details
-                    </p>
-                    <dl className="mt-2 space-y-1 text-sm">
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-soft">File Name</dt>
-                        <dd className="truncate font-medium text-ink">{fileName}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-soft">Source Name</dt>
-                        <dd className="font-medium text-ink">{sourceName || "—"}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-soft">Source Type</dt>
-                        <dd className="font-medium text-ink">{sourceType || "—"}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-ink-soft">Label Dialect</dt>
-                        <dd className="font-medium capitalize text-ink">{dialect}</dd>
-                      </div>
-                    </dl>
-                  </div>
+                  <>
+                    <div className="mt-5 border-t-2 border-ink/10 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                        File Details
+                      </p>
+                      <dl className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">File Name</dt>
+                          <dd className="truncate font-medium text-ink">{fileName}</dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Source Name</dt>
+                          <dd className="font-medium text-ink">{sourceName || "—"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Source Type</dt>
+                          <dd className="font-medium text-ink">{sourceType || "—"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-ink-soft">Label Dialect</dt>
+                          <dd className="font-medium capitalize text-ink">{dialect}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isRunning || !selectedFile}
+                      className="mt-4 w-full"
+                      size="sm"
+                    >
+                      Submit
+                    </Button>
+                  </>
                 )}
               </Card>
 
@@ -249,73 +267,94 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead>
-                        <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                          <th className="py-2 pr-4">File</th>
-                          <th className="py-2 pr-4">Normalize</th>
-                          <th className="py-2 pr-4">Segment</th>
-                          <th className="py-2 pr-4">Classify</th>
-                          <th className="py-2">Result</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-ink/5 align-top">
-                          <td className="py-3 pr-4 font-medium text-ink">
-                            [1/1] — {run.file.file_name}
-                          </td>
-                          {run.file.stages.map((stage) => (
-                            <td key={stage.name} className="py-3 pr-4">
-                              <span className="inline-flex items-center gap-1.5">
-                                <StageIcon status={stage.status} />
-                                <span className="capitalize text-ink-soft">
-                                  {stage.status}
-                                </span>
-                              </span>
+                  <>
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-ink/10 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                            <th className="py-2 pr-4">File</th>
+                            <th className="py-2 pr-4">Normalize</th>
+                            <th className="py-2 pr-4">Segment</th>
+                            <th className="py-2 pr-4">Classify</th>
+                            <th className="py-2">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-ink/5 align-top">
+                            <td className="py-3 pr-4 font-medium text-ink">
+                              [1/1] — {run.file.file_name}
                             </td>
-                          ))}
-                          <td className="py-3">
-                            {run.status === "done" ? (
-                              <Badge tone="leaf">Done</Badge>
-                            ) : run.status === "failed" ? (
-                              <Badge tone="maroon">Failed</Badge>
-                            ) : (
-                              <Badge tone="marigold">Running</Badge>
-                            )}
-                          </td>
-                        </tr>
-
-                        {run.file.segments.length > 0 && (
-                          <tr>
-                            <td colSpan={5} className="py-2">
-                              <div className="space-y-1.5 pl-2">
-                                {run.file.segments.map((seg, i) => (
-                                  <div
-                                    key={i}
-                                    className="flex items-center gap-2 text-sm"
-                                  >
-                                    {seg.status === "kept" ? (
-                                      <CheckCircle2
-                                        size={14}
-                                        className="text-leaf"
-                                      />
-                                    ) : (
-                                      <XCircle size={14} className="text-maroon" />
-                                    )}
-                                    <span className="font-mono text-ink-soft">
-                                      {seg.label}
-                                    </span>
-                                    <span className="text-ink-soft/60">Done</span>
-                                  </div>
-                                ))}
-                              </div>
+                            {run.file.stages.map((stage) => (
+                              <td key={stage.name} className="py-3 pr-4">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <StageIcon status={stage.status} />
+                                  <span className="capitalize text-ink-soft">
+                                    {stage.status}
+                                  </span>
+                                </span>
+                              </td>
+                            ))}
+                            <td className="py-3">
+                              {run.status === "done" ? (
+                                <Badge tone="leaf">Done</Badge>
+                              ) : run.status === "failed" ? (
+                                <Badge tone="maroon">Failed</Badge>
+                              ) : (
+                                <Badge tone="marigold">Running</Badge>
+                              )}
                             </td>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+
+                          {run.file.segments.length > 0 && (
+                            <tr>
+                              <td colSpan={5} className="py-2">
+                                <div className="space-y-1.5 pl-2">
+                                  {run.file.segments.map((seg, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex items-center gap-2 text-sm"
+                                    >
+                                      {seg.status === "kept" ? (
+                                        <CheckCircle2
+                                          size={14}
+                                          className="text-leaf"
+                                        />
+                                      ) : (
+                                        <XCircle size={14} className="text-maroon" />
+                                      )}
+                                      <span className="font-mono text-ink-soft">
+                                        {seg.label}
+                                      </span>
+                                      <span className="text-ink-soft/60">Done</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={isRunning || !selectedFile}
+                        size="sm"
+                      >
+                        Start
+                      </Button>
+                      <a
+                        href={run.status === "done" ? getPipelineDownloadUrl(run.run_id) : undefined}
+                      >
+                        <Button
+                          disabled={run.status !== "done"}
+                          size="sm"
+                        >
+                          <Download size={16} /> Download Output (zip)
+                        </Button>
+                      </a>
+                    </div>
+                  </>
                 )}
               </Card>
 
