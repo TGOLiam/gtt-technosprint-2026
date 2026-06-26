@@ -63,7 +63,7 @@ export default function DashboardPage() {
     setFileName(file.name);
   }
 
-  async function handleSubmit() {
+  async function handleStart() {
     if (!selectedFile) return;
     hasResumed.current = true;
     const runId = await start({ file: selectedFile, sourceName, sourceType, dialect });
@@ -180,14 +180,6 @@ export default function DashboardPage() {
                         </div>
                       </dl>
                     </div>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={isRunning || !selectedFile}
-                      className="mt-4 w-full"
-                      size="sm"
-                    >
-                      Submit
-                    </Button>
                   </>
                 )}
               </Card>
@@ -336,7 +328,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-4 flex items-center gap-3 border-t-2 border-ink/10 pt-4">
                       <Button
-                        onClick={handleSubmit}
+                        onClick={handleStart}
                         disabled={isRunning || !selectedFile}
                         size="sm"
                       >
